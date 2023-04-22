@@ -28,7 +28,6 @@ ggplot(data = exam_data,
   geom_bar()
 ```
 
-
 ```{r}
 
 ggplot(data = exam_data, aes(x= MATHS)) +
