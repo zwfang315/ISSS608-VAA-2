@@ -1,5 +1,5 @@
 ---
-title: "Hands-on_Ex02"
+title: "Hands-on Exercise 2"
 author: "FANG ZI WEI"
 ---
 
@@ -151,7 +151,6 @@ p2 <- ggplot(data = exam_data,
 p1 + p2
 
 ```
-
 
 ```{r}
 ggplot(data=exam_data,
