@@ -1,0 +1,142 @@
+---
+title: "Take Home Exercise 1"
+author: "FANG ZI WEI"
+---
+
+data pre-processing
+
+load packages
+
+```{r}
+pacman::p_load(ggstatsplot, ggthemes, plotly, corrplot, lubridate, ggpubr, plotly, treemap, hrbrthemes, ggrepel, RColorBrewer, gganimate, viridis, ggridges, ggrepel, testthat, hmisc, tidyverse, skimr, DT)
+
+```
+
+load financial journal dataset
+
+```{r}
+financialjournal <- read_csv("Take-home_Ex01/FinancialJournal.csv")
+```
+
+display the columns and their definition and data type
+
+Explore data
+```{r}
+skimr::skim(financialjournal)
+```
+
+```{r}
+glimpse(financialjournal,30)
+```
+
+datatable
+
+```{r}
+
+DT::datatable(head(financialjournal,20), class = "display")
+```
+
+sort the dataset by participantid
+
+```{r}
+financialjournal <- financialjournal[order(financialjournal$participantId),]
+```
+
+check missing values
+
+```{r}
+colSums(is.na(financialjournal))
+```
+
+check for duplicates
+
+```{r}
+dup_rows <- duplicated(financialjournal)
+
+financialjournal[dup_rows, ]
+```
+
+remove duplicates
+
+```{r}
+financialjournal_distinct <- unique(financialjournal)
+```
+
+new variables (year, month, day, morning, noon, afternoon, midnight) split by space first
+
+```{r}
+financialjournal_distinct[c('Date', 'Time')] <- str_split_fixed(financialjournal_distinct$timestamp, ' ', 2)
+
+```
+
+split the date into year, month, day
+
+```{r}
+financialjournal_distinct[c('Year', 'Month', 'Day')] <- str_split_fixed(financialjournal_distinct$Date, '-', 3)
+```
+
+split the time into morning, noon, afternoon, evening, midnight
+
+```{r}
+financialjournal_distinct$Time <- hms(financialjournal_distinct$Time)
+
+breaks <- hour(hm("00:00", "6:00", "12:00", "18:00", "23:59"))
+
+labels <- c("Midnight", "Morning", "Afternoon","Evening")
+
+financialjournal_distinct$daytime <- cut(x=hour(financialjournal_distinct$Time), breaks = breaks, labels = labels, include.lowest = TRUE)
+
+```
+
+drop time and timestamp
+```{r}
+
+financialjournal_distinct <- subset(financialjournal_distinct, select = -c(Time, timestamp))
+```
+
+
+
+load participants dataset
+
+```{r}
+participants <- read_csv("Take-home_Ex01/Participants.csv")
+```
+
+check missing values
+
+```{r}
+colSums(is.na(participants))
+```
+
+Explore data
+```{r}
+skimr::skim(participants)
+```
+
+```{r}
+glimpse(participants,30)
+```
+
+datatable
+
+```{r}
+
+DT::datatable(head(participants,20), class = "display")
+```
+
+NEED TO PIVOT THE TABLE
+
+NORMALITY ASSUMPTION
+(plot ggplot to see if the line is deviated)
+
+
+ggstatplot
+
+NEED TO BE REPRODUCIBLE
+
+
+
+
+EDA
+
+all superset is not frequenr

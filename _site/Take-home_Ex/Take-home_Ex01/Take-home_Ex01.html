@@ -209,7 +209,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
  <span class="dropdown-text">Take Home Exercise 3</span></a>
   </li>  
         <li>
-    <a class="dropdown-item" href="../../Take-home_Ex/Take-home_Ex024/Take-home_Ex04.html">
+    <a class="dropdown-item" href="../../Take-home_Ex/Take-home_Ex024/Take-home_Ex04.qmd">
  <span class="dropdown-text">Take Home Exercise 4</span></a>
   </li>  
     </ul>
@@ -266,29 +266,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <p>data pre-processing</p>
 <p>load packages</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>pacman<span class="sc">::</span><span class="fu">p_load</span>(ggstatsplot, ggthemes, plotly, corrplot, lubridate, ggpubr, plotly, treemap, d3treeR, hrbrthemes, ggrepel, RColorBrewer, gganimate, viridis, ggridges, ggrepel, testthat, hmisc, tidyverse, lubridate, skimr, DT)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Installing package into 'C:/Users/ziwei/AppData/Local/R/win-library/4.2'
-(as 'lib' is unspecified)</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Warning: package 'd3treeR' is not available for this version of R
-
-A version of this package for your version of R might be available elsewhere,
-see the ideas at
-https://cran.r-project.org/doc/manuals/r-patched/R-admin.html#Installing-packages</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Warning: unable to access index for repository http://www.stats.ox.ac.uk/pub/RWin/bin/windows/contrib/4.2:
-  cannot open URL 'http://www.stats.ox.ac.uk/pub/RWin/bin/windows/contrib/4.2/PACKAGES'</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Warning in p_install(package, character.only = TRUE, ...):</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Warning in library(package, lib.loc = lib.loc, character.only = TRUE,
-logical.return = TRUE, : there is no package called 'd3treeR'</code></pre>
-</div>
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>pacman<span class="sc">::</span><span class="fu">p_load</span>(ggstatsplot, ggthemes, plotly, corrplot, lubridate, ggpubr, plotly, treemap, hrbrthemes, ggrepel, RColorBrewer, gganimate, viridis, ggridges, ggrepel, testthat, hmisc, tidyverse, skimr, DT)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>Installing package into 'C:/Users/ziwei/AppData/Local/R/win-library/4.2'
 (as 'lib' is unspecified)</code></pre>
@@ -316,12 +294,12 @@ logical.return = TRUE, : there is no package called 'hmisc'</code></pre>
 </div>
 <div class="cell-output cell-output-stderr">
 <pre><code>Warning in pacman::p_load(ggstatsplot, ggthemes, plotly, corrplot, lubridate, : Failed to install/load:
-d3treeR, hmisc</code></pre>
+hmisc</code></pre>
 </div>
 </div>
 <p>load financial journal dataset</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>financialjournal <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="st">"Take-home_Ex01/FinancialJournal.csv"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>financialjournal <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="st">"Take-home_Ex01/FinancialJournal.csv"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>Rows: 1513636 Columns: 4
 ── Column specification ────────────────────────────────────────────────────────
@@ -337,7 +315,7 @@ dttm (1): timestamp
 <p>display the columns and their definition and data type</p>
 <p>Explore data</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>skimr<span class="sc">::</span><span class="fu">skim</span>(financialjournal)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>skimr<span class="sc">::</span><span class="fu">skim</span>(financialjournal)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <table class="table table-sm table-striped">
 <caption>Data summary</caption>
@@ -517,7 +495,7 @@ dttm (1): timestamp
 </div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">glimpse</span>(financialjournal,<span class="dv">30</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">glimpse</span>(financialjournal,<span class="dv">30</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Rows: 1,513,636
 Columns: 4
@@ -529,20 +507,20 @@ $ amount        &lt;dbl&gt; 2472.5…</code></pre>
 </div>
 <p>datatable</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>DT<span class="sc">::</span><span class="fu">datatable</span>(<span class="fu">head</span>(financialjournal,<span class="dv">20</span>), <span class="at">class =</span> <span class="st">"display"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>DT<span class="sc">::</span><span class="fu">datatable</span>(<span class="fu">head</span>(financialjournal,<span class="dv">20</span>), <span class="at">class =</span> <span class="st">"display"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 
-<div class="datatables html-widget html-fill-item-overflow-hidden html-fill-item" id="htmlwidget-ea441e274e1d2d608977" style="width:100%;height:auto;"></div>
-<script type="application/json" data-for="htmlwidget-ea441e274e1d2d608977">{"x":{"filter":"none","vertical":false,"data":[["1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20"],[0,0,0,1,1,1,2,2,2,3,3,3,4,4,4,5,5,5,6,6],["2022-03-01T00:00:00Z","2022-03-01T00:00:00Z","2022-03-01T00:00:00Z","2022-03-01T00:00:00Z","2022-03-01T00:00:00Z","2022-03-01T00:00:00Z","2022-03-01T00:00:00Z","2022-03-01T00:00:00Z","2022-03-01T00:00:00Z","2022-03-01T00:00:00Z","2022-03-01T00:00:00Z","2022-03-01T00:00:00Z","2022-03-01T00:00:00Z","2022-03-01T00:00:00Z","2022-03-01T00:00:00Z","2022-03-01T00:00:00Z","2022-03-01T00:00:00Z","2022-03-01T00:00:00Z","2022-03-01T00:00:00Z","2022-03-01T00:00:00Z"],["Wage","Shelter","Education","Wage","Shelter","Education","Wage","Shelter","Education","Wage","Shelter","Education","Wage","Shelter","Education","Wage","Shelter","Education","Wage","Shelter"],[2472.5075589,-554.9886217,-38.00537955,2046.5622064,-554.9886217,-38.00537955,2436.9152859,-556.5529272,-12.81244502,2366.6297276,-554.9886217,-38.00537955,2456.6866762,-1556.356187,-12.81244502,2328.9207402,-600.0336247,-12.81244502,2256.2541573,-581.1919891]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>participantId<\/th>\n      <th>timestamp<\/th>\n      <th>category<\/th>\n      <th>amount<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"columnDefs":[{"className":"dt-right","targets":[1,4]},{"orderable":false,"targets":0}],"order":[],"autoWidth":false,"orderClasses":false},"selection":{"mode":"multiple","selected":null,"target":"row","selectable":null}},"evals":[],"jsHooks":[]}</script>
+<div class="datatables html-widget html-fill-item-overflow-hidden html-fill-item" id="htmlwidget-f3e455359862e91a179e" style="width:100%;height:auto;"></div>
+<script type="application/json" data-for="htmlwidget-f3e455359862e91a179e">{"x":{"filter":"none","vertical":false,"data":[["1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20"],[0,0,0,1,1,1,2,2,2,3,3,3,4,4,4,5,5,5,6,6],["2022-03-01T00:00:00Z","2022-03-01T00:00:00Z","2022-03-01T00:00:00Z","2022-03-01T00:00:00Z","2022-03-01T00:00:00Z","2022-03-01T00:00:00Z","2022-03-01T00:00:00Z","2022-03-01T00:00:00Z","2022-03-01T00:00:00Z","2022-03-01T00:00:00Z","2022-03-01T00:00:00Z","2022-03-01T00:00:00Z","2022-03-01T00:00:00Z","2022-03-01T00:00:00Z","2022-03-01T00:00:00Z","2022-03-01T00:00:00Z","2022-03-01T00:00:00Z","2022-03-01T00:00:00Z","2022-03-01T00:00:00Z","2022-03-01T00:00:00Z"],["Wage","Shelter","Education","Wage","Shelter","Education","Wage","Shelter","Education","Wage","Shelter","Education","Wage","Shelter","Education","Wage","Shelter","Education","Wage","Shelter"],[2472.5075589,-554.9886217,-38.00537955,2046.5622064,-554.9886217,-38.00537955,2436.9152859,-556.5529272,-12.81244502,2366.6297276,-554.9886217,-38.00537955,2456.6866762,-1556.356187,-12.81244502,2328.9207402,-600.0336247,-12.81244502,2256.2541573,-581.1919891]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>participantId<\/th>\n      <th>timestamp<\/th>\n      <th>category<\/th>\n      <th>amount<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"columnDefs":[{"className":"dt-right","targets":[1,4]},{"orderable":false,"targets":0}],"order":[],"autoWidth":false,"orderClasses":false},"selection":{"mode":"multiple","selected":null,"target":"row","selectable":null}},"evals":[],"jsHooks":[]}</script>
 </div>
 </div>
 <p>sort the dataset by participantid</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>financialjournal <span class="ot">&lt;-</span> financialjournal[<span class="fu">order</span>(financialjournal<span class="sc">$</span>participantId),]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>financialjournal <span class="ot">&lt;-</span> financialjournal[<span class="fu">order</span>(financialjournal<span class="sc">$</span>participantId),]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>check missing values</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="fu">colSums</span>(<span class="fu">is.na</span>(financialjournal))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">colSums</span>(<span class="fu">is.na</span>(financialjournal))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>participantId     timestamp      category        amount 
             0             0             0             0 </code></pre>
@@ -550,9 +528,9 @@ $ amount        &lt;dbl&gt; 2472.5…</code></pre>
 </div>
 <p>check for duplicates</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>dup_rows <span class="ot">&lt;-</span> <span class="fu">duplicated</span>(financialjournal)</span>
-<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>financialjournal[dup_rows, ]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>dup_rows <span class="ot">&lt;-</span> <span class="fu">duplicated</span>(financialjournal)</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>financialjournal[dup_rows, ]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code># A tibble: 1,113 × 4
    participantId timestamp           category   amount
@@ -572,33 +550,33 @@ $ amount        &lt;dbl&gt; 2472.5…</code></pre>
 </div>
 <p>remove duplicates</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>financialjournal_distinct <span class="ot">&lt;-</span> <span class="fu">unique</span>(financialjournal)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>financialjournal_distinct <span class="ot">&lt;-</span> <span class="fu">unique</span>(financialjournal)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>new variables (year, month, day, morning, noon, afternoon, midnight) split by space first</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>financialjournal_distinct[<span class="fu">c</span>(<span class="st">'Date'</span>, <span class="st">'Time'</span>)] <span class="ot">&lt;-</span> <span class="fu">str_split_fixed</span>(financialjournal_distinct<span class="sc">$</span>timestamp, <span class="st">' '</span>, <span class="dv">2</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>financialjournal_distinct[<span class="fu">c</span>(<span class="st">'Date'</span>, <span class="st">'Time'</span>)] <span class="ot">&lt;-</span> <span class="fu">str_split_fixed</span>(financialjournal_distinct<span class="sc">$</span>timestamp, <span class="st">' '</span>, <span class="dv">2</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>split the date into year, month, day</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>financialjournal_distinct[<span class="fu">c</span>(<span class="st">'Year'</span>, <span class="st">'Month'</span>, <span class="st">'Day'</span>)] <span class="ot">&lt;-</span> <span class="fu">str_split_fixed</span>(financialjournal_distinct<span class="sc">$</span>Date, <span class="st">'-'</span>, <span class="dv">3</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>financialjournal_distinct[<span class="fu">c</span>(<span class="st">'Year'</span>, <span class="st">'Month'</span>, <span class="st">'Day'</span>)] <span class="ot">&lt;-</span> <span class="fu">str_split_fixed</span>(financialjournal_distinct<span class="sc">$</span>Date, <span class="st">'-'</span>, <span class="dv">3</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>split the time into morning, noon, afternoon, evening, midnight</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>financialjournal_distinct<span class="sc">$</span>Time <span class="ot">&lt;-</span> <span class="fu">hms</span>(financialjournal_distinct<span class="sc">$</span>Time)</span>
-<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a>breaks <span class="ot">&lt;-</span> <span class="fu">hour</span>(<span class="fu">hm</span>(<span class="st">"00:00"</span>, <span class="st">"6:00"</span>, <span class="st">"12:00"</span>, <span class="st">"18:00"</span>, <span class="st">"23:59"</span>))</span>
-<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a>labels <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"Midnight"</span>, <span class="st">"Morning"</span>, <span class="st">"Afternoon"</span>,<span class="st">"Evening"</span>)</span>
-<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a>financialjournal_distinct<span class="sc">$</span>daytime <span class="ot">&lt;-</span> <span class="fu">cut</span>(<span class="at">x=</span><span class="fu">hour</span>(financialjournal_distinct<span class="sc">$</span>Time), <span class="at">breaks =</span> breaks, <span class="at">labels =</span> labels, <span class="at">include.lowest =</span> <span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>financialjournal_distinct<span class="sc">$</span>Time <span class="ot">&lt;-</span> <span class="fu">hms</span>(financialjournal_distinct<span class="sc">$</span>Time)</span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>breaks <span class="ot">&lt;-</span> <span class="fu">hour</span>(<span class="fu">hm</span>(<span class="st">"00:00"</span>, <span class="st">"6:00"</span>, <span class="st">"12:00"</span>, <span class="st">"18:00"</span>, <span class="st">"23:59"</span>))</span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>labels <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"Midnight"</span>, <span class="st">"Morning"</span>, <span class="st">"Afternoon"</span>,<span class="st">"Evening"</span>)</span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>financialjournal_distinct<span class="sc">$</span>daytime <span class="ot">&lt;-</span> <span class="fu">cut</span>(<span class="at">x=</span><span class="fu">hour</span>(financialjournal_distinct<span class="sc">$</span>Time), <span class="at">breaks =</span> breaks, <span class="at">labels =</span> labels, <span class="at">include.lowest =</span> <span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>drop time and timestamp</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>financialjournal_distinct <span class="ot">&lt;-</span> <span class="fu">subset</span>(financialjournal_distinct, <span class="at">select =</span> <span class="sc">-</span><span class="fu">c</span>(Time, timestamp))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>financialjournal_distinct <span class="ot">&lt;-</span> <span class="fu">subset</span>(financialjournal_distinct, <span class="at">select =</span> <span class="sc">-</span><span class="fu">c</span>(Time, timestamp))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>load participants dataset</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a>participants <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="st">"Take-home_Ex01/Participants.csv"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>participants <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="st">"Take-home_Ex01/Participants.csv"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>Rows: 1011 Columns: 7
 ── Column specification ────────────────────────────────────────────────────────
@@ -613,7 +591,7 @@ lgl (1): haveKids
 </div>
 <p>check missing values</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="fu">colSums</span>(<span class="fu">is.na</span>(participants))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="fu">colSums</span>(<span class="fu">is.na</span>(participants))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code> participantId  householdSize       haveKids            age educationLevel 
              0              0              0              0              0 
@@ -623,7 +601,7 @@ lgl (1): haveKids
 </div>
 <p>Explore data</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a>skimr<span class="sc">::</span><span class="fu">skim</span>(participants)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>skimr<span class="sc">::</span><span class="fu">skim</span>(participants)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <table class="table table-sm table-striped">
 <caption>Data summary</caption>
@@ -826,7 +804,7 @@ lgl (1): haveKids
 </div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="fu">glimpse</span>(participants,<span class="dv">30</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="fu">glimpse</span>(participants,<span class="dv">30</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Rows: 1,011
 Columns: 7
@@ -841,11 +819,11 @@ $ joviality      &lt;dbl&gt; 0.001…</code></pre>
 </div>
 <p>datatable</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a>DT<span class="sc">::</span><span class="fu">datatable</span>(<span class="fu">head</span>(participants,<span class="dv">20</span>), <span class="at">class =</span> <span class="st">"display"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a>DT<span class="sc">::</span><span class="fu">datatable</span>(<span class="fu">head</span>(participants,<span class="dv">20</span>), <span class="at">class =</span> <span class="st">"display"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 
-<div class="datatables html-widget html-fill-item-overflow-hidden html-fill-item" id="htmlwidget-763b230988d7bdbe9d92" style="width:100%;height:auto;"></div>
-<script type="application/json" data-for="htmlwidget-763b230988d7bdbe9d92">{"x":{"filter":"none","vertical":false,"data":[["1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20"],[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19],[3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3],[true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true],[36,25,35,21,43,32,26,27,20,35,48,27,34,18,38,35,39,57,20,25],["HighSchoolOrCollege","HighSchoolOrCollege","HighSchoolOrCollege","HighSchoolOrCollege","Bachelors","HighSchoolOrCollege","HighSchoolOrCollege","Bachelors","Bachelors","Bachelors","HighSchoolOrCollege","HighSchoolOrCollege","HighSchoolOrCollege","Bachelors","Graduate","HighSchoolOrCollege","Bachelors","Bachelors","Graduate","Bachelors"],["H","B","A","I","H","D","I","A","G","D","D","F","D","J","H","I","J","I","I","B"],[0.001626703,0.3280865,0.39346959,0.138063446,0.857396691,0.772957791,0.833980668,0.958189409,0.697554819,0.467131409,0.557176006,0.25422732,0.241615182,0.724503834,0.930003289,0.232266068,0.392189088,0.114667399,0.32696558,0.486470164]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>participantId<\/th>\n      <th>householdSize<\/th>\n      <th>haveKids<\/th>\n      <th>age<\/th>\n      <th>educationLevel<\/th>\n      <th>interestGroup<\/th>\n      <th>joviality<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"columnDefs":[{"className":"dt-right","targets":[1,2,4,7]},{"orderable":false,"targets":0}],"order":[],"autoWidth":false,"orderClasses":false},"selection":{"mode":"multiple","selected":null,"target":"row","selectable":null}},"evals":[],"jsHooks":[]}</script>
+<div class="datatables html-widget html-fill-item-overflow-hidden html-fill-item" id="htmlwidget-ad14949f9cbecae4bca7" style="width:100%;height:auto;"></div>
+<script type="application/json" data-for="htmlwidget-ad14949f9cbecae4bca7">{"x":{"filter":"none","vertical":false,"data":[["1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20"],[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19],[3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3],[true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true],[36,25,35,21,43,32,26,27,20,35,48,27,34,18,38,35,39,57,20,25],["HighSchoolOrCollege","HighSchoolOrCollege","HighSchoolOrCollege","HighSchoolOrCollege","Bachelors","HighSchoolOrCollege","HighSchoolOrCollege","Bachelors","Bachelors","Bachelors","HighSchoolOrCollege","HighSchoolOrCollege","HighSchoolOrCollege","Bachelors","Graduate","HighSchoolOrCollege","Bachelors","Bachelors","Graduate","Bachelors"],["H","B","A","I","H","D","I","A","G","D","D","F","D","J","H","I","J","I","I","B"],[0.001626703,0.3280865,0.39346959,0.138063446,0.857396691,0.772957791,0.833980668,0.958189409,0.697554819,0.467131409,0.557176006,0.25422732,0.241615182,0.724503834,0.930003289,0.232266068,0.392189088,0.114667399,0.32696558,0.486470164]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>participantId<\/th>\n      <th>householdSize<\/th>\n      <th>haveKids<\/th>\n      <th>age<\/th>\n      <th>educationLevel<\/th>\n      <th>interestGroup<\/th>\n      <th>joviality<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"columnDefs":[{"className":"dt-right","targets":[1,2,4,7]},{"orderable":false,"targets":0}],"order":[],"autoWidth":false,"orderClasses":false},"selection":{"mode":"multiple","selected":null,"target":"row","selectable":null}},"evals":[],"jsHooks":[]}</script>
 </div>
 </div>
 <p>NEED TO PIVOT THE TABLE</p>
