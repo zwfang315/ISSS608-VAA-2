@@ -1225,5 +1225,3 @@ ggplotly(p)
 3\. As the number of family members decreases, so do shelter costs. Consequently, residents with larger households may require financial assistance from the city council to cover housing expenses. Therefore, we suggest that city councillors allocate funds to support housing for households with greater size.
 
 4\. It is advisable to encourage participants with lower educational degrees to pursue high-school or college degrees. This would support their personal and professional growth, potentially leading to improved opportunities and well-being.
-
-# References
