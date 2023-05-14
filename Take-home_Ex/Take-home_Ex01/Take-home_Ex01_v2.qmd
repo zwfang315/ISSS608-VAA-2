@@ -1174,7 +1174,7 @@ p1 + p2 + p3 + p4 + p5
 
 It is interesting to note that individuals with super low income who exhibit remarkably highest average joviality scores of 0.75. Joviality exhibits a stronger negative correlation with lower income levels compared to wealthier individuals.
 
-# Correlation between joviality and haveKids
+# Comparison between joviality and haveKids
 
 Does it mean having children bring more joy to life?
 
