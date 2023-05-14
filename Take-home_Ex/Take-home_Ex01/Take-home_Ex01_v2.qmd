@@ -330,9 +330,7 @@ corrplot(correlation,type = "upper", order = "hclust",
 
 ## Wage vs. Education level
 
-The distribution across education levels are all right-skewed. 
-::: panel-tabset 
-## The plot
+The distribution across education levels are all right-skewed. ::: panel-tabset \## The plot
 
 ```{r}
 #| eval: true
