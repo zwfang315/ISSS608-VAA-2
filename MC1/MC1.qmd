@@ -1,0 +1,11 @@
+---
+title: "MC1"
+---
+
+```{r}
+pacman::p_load(jsonlite,tidygraph,ggraph, visNetwork, tidyverse)
+```
+
+```{r}
+MC1 <- jsonlite::fromJSON("data/MC1.json")
+```
