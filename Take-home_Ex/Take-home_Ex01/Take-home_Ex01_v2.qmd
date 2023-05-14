@@ -330,7 +330,9 @@ corrplot(correlation,type = "upper", order = "hclust",
 
 ## Wage vs. Education level
 
-The distribution across education levels are all right-skewed. ::: panel-tabset \## The plot
+The distribution across education levels are all right-skewed. 
+::: panel-tabset 
+## The plot
 
 ```{r}
 #| eval: true
@@ -1175,6 +1177,8 @@ It is interesting to note that individuals with super low income who exhibit rem
 # Correlation between joviality and haveKids
 
 Does it mean having children bring more joy to life?
+
+It seems that residents who don't have kids are slightly more happy than those who have kids with an average joviality 0.475.
 
 ::: panel-tabset
 ## The plot
