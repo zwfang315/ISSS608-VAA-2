@@ -1,4 +1,0 @@
----
-title: "Take Home Exercise 3"
-author: "FANG ZI WEI"
----
