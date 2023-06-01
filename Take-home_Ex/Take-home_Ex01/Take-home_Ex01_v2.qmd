@@ -330,9 +330,7 @@ corrplot(correlation,type = "upper", order = "hclust",
 
 ## Wage vs. Education level
 
-The distribution across education levels are all right-skewed. 
-::: panel-tabset 
-## The plot
+The distribution across education levels are all right-skewed. ::: panel-tabset \## The plot
 
 ```{r}
 #| eval: true
@@ -371,7 +369,9 @@ ggplot(merged_table, aes(x = Wage)) +
   theme_minimal()
 ```
 
-::: Normal QQ plot is used to verify whether wage follows normal distribution among different education level.
+:::
+
+Normal QQ plot is used to verify whether wage follows normal distribution among different education level.
 
 Out of 4 QQ plots, the tails of the distribution start deviating from the normal distribution line, which suggests that there are outliers or extreme values in each education level.
 
