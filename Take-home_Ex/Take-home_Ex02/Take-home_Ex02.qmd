@@ -243,7 +243,7 @@ visNetwork(nodes_df,
   visLayout(randomSeed = 123)
 ```
 
-# Top 10 illegal companies that have the most sudden changes over years
+# Top 5 illegal companies that have the most sudden changes over years
 Observation:
 
 Sea Breezes S.A. de C.V. Freight has the highest increase from 49 to 1458 shipping frequencies in just one year difference with over 2875 % increment.
