@@ -12,17 +12,23 @@ editor: visual
 ---
 
 # Data
+
 ## Load Packages
+
 ```{r}
 pacman::p_load(jsonlite,tidygraph,ggraph, visNetwork, tidyverse, lubridate, plotly, DT, zoo, dplyr, ggplot2, tidyr)
 ```
+
 ## Import Dataset
+
 ```{r}
 MC2 <- jsonlite::fromJSON("data/mc2_challenge_graph.json")
 ```
-## Data Wrangling 
+
+## Data Wrangling
 
 ### Step 1. Extract the nodes
+
 ```{r}
 #| code-fold: true
 #| code-summary: Show code
@@ -32,6 +38,7 @@ DT::datatable(mc2_nodes, class = "display")
 ```
 
 ### Step 2. Extract the edges
+
 ```{r}
 #| code-fold: true
 #| code-summary: Show code
@@ -45,7 +52,9 @@ DT::datatable(head(mc2_edges,20), class = "display")
 ```
 
 ### Step 3. Filter HSCode
+
 Our primary goal is to identify companies engaged in illegal fishing activities. In accordance with information from [external sources](https://connect2india.com/hs-classification.html), we need to focus on filtering out those companies with Harmonized System (HS) code prefixes ranging from 301 to 309.
+
 ```{r}
 #| code-fold: true
 #| code-summary: Show code
@@ -54,7 +63,9 @@ mc2_edges_fishing <- mc2_edges %>%
 ```
 
 ### Step 4. Replace missing values in "valueofgoodsusd"
+
 We discovered that the columns "valueofgoodsusd" and "valueofgoods_omu" both contained missing values. Some rows, however, provided values in both of these columns. Utilizing this information, we were able to ascertain a conversion rate of 1.5384 (omu/usd). This conversion rate was subsequently employed to fill in the missing data in these columns.
+
 ```{r}
 #| code-fold: true
 #| code-summary: Show code
@@ -67,7 +78,9 @@ mc2_edges_fishing <- mc2_edges_fishing %>%
 ```
 
 ### Step 5. Shipment Frequency
+
 The frequency of shipments for each unique pair of source and target, differentiated by their respective Harmonized System (HS) code and year. We aggregate edges, get the shipment counts and filter out those shipment counts greater than 20
+
 ```{r}
 #| code-fold: true
 #| code-summary: Show code
@@ -84,7 +97,9 @@ mc2_edges_aggregated <- mc2_edges_fishing %>%
 To identify companies potentially involved in illegal fishing activities, we adopted a two approaches focusing on their shipment frequency and any abnormal fluctuations in shipment value over the years. Companies that exhibited both these characteristics were considered suspicious and were consequently flagged as possible illegal fishing entities.
 
 ### Flag 1: Sudden Changes on shipment Frequency
+
 illegal fishing company significantly increases or decreases its shipment frequency suddenly, it can be a sign that the company is trying to avoid detection, manipulate market prices, or respond to changes in enforcement intensity. Approach: calculate an average shipping frequency over a 2 year period and get a list of companies with sudden changes in their shipment volume over each time period compared to their threshold.
+
 ```{r}
 #| code-fold: true
 #| code-summary: Show code
@@ -101,7 +116,9 @@ company_list_frequency <- unique(mc2_edges_aggregated_sudden_change_frequency$so
 ```
 
 ### Flag 2: abnormal shipment values over years
+
 illegal fishing might under-declare the weight of their catch to minimize attention and lower duties or taxes. On the other side, might over-declare the value of their shipment to over-insure it. These would lead to an abnormally high value-weight ratio. Approach: To identify anomalies in the declared value of goods, we examine the shipment values in relation to the standard deviation and the average value of shipments for each fishing entity. If a shipment value surpasses the z-score threshold, we interpret it as an abnormal occurrence.
+
 ```{r}
 #| code-fold: true
 #| code-summary: Show code
@@ -135,7 +152,8 @@ datatable(illegal_fishing_company, options = list(pageLength = 5))
 
 ## Data Preparation
 
-### Step 1. Filter edges that have the illegal fishing company
+#### Step 1. Filter edges that have the illegal fishing company
+
 ```{r}
 #| code-fold: true
 #| code-summary: Show code
@@ -149,7 +167,8 @@ illegal_fishing_company_aggregated <- illegal_fishing_company_aggregated %>%
   select(source, target, hscode, Year, weights)
 ```
 
-### Step 2. Filter nodes that have the illegal fishing company
+#### Step 2. Filter nodes that have the illegal fishing company
+
 ```{r}
 #| code-fold: true
 #| code-summary: Show code
@@ -161,7 +180,8 @@ illegal_fishing_company_nodes_extracted <- data.frame(illegal_fishing_company_no
 illegal_fishing_company_nodes_extracted <- rename(illegal_fishing_company_nodes_extracted, id = illegal_fishing_company_nodes_extracted)
 ```
 
-### Step 3. Build tidy graph data model
+#### Step 3. Build tidy graph data model
+
 ```{r}
 #| code-fold: true
 #| code-summary: Show code
@@ -171,7 +191,8 @@ mc2_graph <- tbl_graph(nodes = illegal_fishing_company_nodes_extracted,
 mc2_graph
 ```
 
-### Step 4. Prepare edges tibble data frame
+#### Step 4. Prepare edges tibble data frame
+
 ```{r}
 #| code-fold: true
 #| code-summary: Show code
@@ -180,7 +201,8 @@ edges_df <- mc2_graph %>%
   as_tibble()
 ```
 
-### Step 5. Prepare nodes tibble data frame
+#### Step 5. Prepare nodes tibble data frame
+
 ```{r}
 #| code-fold: true
 #| code-summary: Show code
@@ -193,7 +215,9 @@ nodes_df <- mc2_graph %>%
 ```
 
 ##Visualise the Network graph
-## Network plot
+
+#### Network plot
+
 ```{r}
 #| code-fold: true
 #| code-summary: Show code
@@ -207,8 +231,10 @@ visNetwork(nodes_df,
 ```
 
 # Top 10 illegal companies that have the most sudden changes over years
+
 ::: panel-tabset
 ## The plot
+
 ```{r}
 #| eval: true
 #| echo: false
@@ -252,6 +278,7 @@ ggplotly(p)
 ```
 
 ## Code
+
 ```{r}
 #| eval: false
 mc2_edges_fishing <- mc2_edges_fishing %>%
@@ -299,8 +326,8 @@ ggplotly(p)
 From the line chart below, Playa de la Luna Incorporated has the most abnormal value-weight ratio, which got almost 400% decrease on value-weight ratio in one day difference. Therefore, means this company most likely perform an illegal fishing
 
 ::: panel-tabset
-
 ## The plot
+
 ```{r fig.width=10, fig.height=8}
 #| eval: true
 #| echo: false
@@ -330,6 +357,7 @@ ggplotly(p)
 ```
 
 ## Code
+
 ```{r fig.width=8, fig.height=6}
 #| eval: false
 mc2_edges_fishing_2 <- mc2_edges_fishing %>%
@@ -363,8 +391,8 @@ ggplotly(p)
 To uncover the most frequently utilized routes by illegal fishing companies,below heat map provides a clear representation of the shipping frequency between the origin and destination countries, thereby highlighting the routes that are potentially preferred by companies engaged in illegal activities. Observation: Among companies involved in illegal fishing activities, the shipping route from Merigrad to Oceanus is the most frequently used, with 47 thousand shipments. This is followed by the routes from Isliandor to Coralmarica, and Vesperanda to Oceanus.
 
 ::: panel-tabset
-
 ## The plot
+
 ```{r fig.width=8, fig.height=8}
 #| eval: true
 #| echo: false
@@ -387,6 +415,7 @@ ggplot(illegal_fishing_company_aggregated_1, aes(x = shpcountry, y = rcvcountry,
 ```
 
 ## Code
+
 ```{r fig.width=10, fig.height=8}
 #| eval: false
 illegal_fishing_company_aggregated_1 <- illegal_fishing_company_aggregated %>%
