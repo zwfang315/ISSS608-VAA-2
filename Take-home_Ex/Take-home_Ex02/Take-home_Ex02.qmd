@@ -232,6 +232,7 @@ visNetwork(nodes_df,
 
 # Top 10 illegal companies that have the most sudden changes over years
 Observation:
+
 Sea Breezes S.A. de C.V. Freight has the highest increase from 49 to 1458 shipping frequencies in just one year difference with over 2875 % increment.
 In 2029, Madhya Pradesh Market LLC had a shipping frequency of 36, however, in the subsequent year, 2030, the company experienced a complete absence of shipments, with 0 times recorded. In the subsequent year, 2031, the company experienced a remarkable surge in its shipping frequency, reaching an impressive count of 981. This significant increase showcases substantial growth and heightened shipping activity compared to the previous year. In 2032, the company's shipping frequency dropped to 291. However, in 2033, the shipping frequency once again dropped to zero, indicating a lack of activity. The trend continued into 2034, with no shipments recorded during that year as well.
 nián yú Ltd. Corporation experienced varying shipping frequencies over the years. In 2029, the company had a shipping frequency with 35 shipments. However, there was a significant drop in activity the following year, as the company did not have any shipments in 2030. In 2031, the shipping frequency rebounded and reached 46 shipments. The subsequent years demonstrated substantial growth, with 772 shipments in 2032, 966 shipments in 2033, and 121 shipments in 2034. 
@@ -338,6 +339,7 @@ ggplotly(p)
 # Top 5 illegal fishing companies that have abnormal value-weight ratio across years
 
 Observation:
+
 From the line chart below, Playa de la Luna Incorporated has the most abnormal value-weight ratio, which got almost 400% decrease on value-weight ratio in one day difference. Therefore, means this company most likely perform an illegal fishing
 
 ::: panel-tabset
@@ -403,7 +405,9 @@ ggplotly(p)
 
 # Heatmap on illegal fish shipping route
 
-To uncover the most frequently utilized routes by illegal fishing companies,below heat map provides a clear representation of the shipping frequency between the origin and destination countries, thereby highlighting the routes that are potentially preferred by companies engaged in illegal activities. Observation: Among companies involved in illegal fishing activities, the shipping route from Merigrad to Oceanus is the most frequently used, with 47 thousand shipments. This is followed by the routes from Isliandor to Coralmarica, and Vesperanda to Oceanus.
+To uncover the most frequently utilized routes by illegal fishing companies,below heat map provides a clear representation of the shipping frequency between the origin and destination countries, thereby highlighting the routes that are potentially preferred by companies engaged in illegal activities. 
+
+Observation: Among companies involved in illegal fishing activities, the shipping route from Merigrad to Oceanus is the most frequently used, with 47 thousand shipments. This is followed by the routes from Isliandor to Coralmarica, and Vesperanda to Oceanus.
 
 ::: panel-tabset
 ## The plot
