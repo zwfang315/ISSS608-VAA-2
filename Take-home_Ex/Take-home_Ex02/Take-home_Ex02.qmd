@@ -148,11 +148,11 @@ illegal_fishing_company <- data.frame(Illegal_Fishing_Company = unlist(illegal_f
 datatable(illegal_fishing_company, options = list(pageLength = 5))
 ```
 
-# Network Analysis
+## Network Analysis
 
-## Data Preparation
+### Data Preparation
 
-#### Step 1. Filter edges that have the illegal fishing company
+##### Step 1. Filter edges that have the illegal fishing company
 
 ```{r}
 #| code-fold: true
@@ -167,7 +167,7 @@ illegal_fishing_company_aggregated <- illegal_fishing_company_aggregated %>%
   select(source, target, hscode, Year, weights)
 ```
 
-#### Step 2. Filter nodes that have the illegal fishing company
+##### Step 2. Filter nodes that have the illegal fishing company
 
 ```{r}
 #| code-fold: true
@@ -180,7 +180,7 @@ illegal_fishing_company_nodes_extracted <- data.frame(illegal_fishing_company_no
 illegal_fishing_company_nodes_extracted <- rename(illegal_fishing_company_nodes_extracted, id = illegal_fishing_company_nodes_extracted)
 ```
 
-#### Step 3. Build tidy graph data model
+##### Step 3. Build tidy graph data model
 
 ```{r}
 #| code-fold: true
@@ -191,7 +191,7 @@ mc2_graph <- tbl_graph(nodes = illegal_fishing_company_nodes_extracted,
 mc2_graph
 ```
 
-#### Step 4. Prepare edges tibble data frame
+##### Step 4. Prepare edges tibble data frame
 
 ```{r}
 #| code-fold: true
@@ -201,7 +201,7 @@ edges_df <- mc2_graph %>%
   as_tibble()
 ```
 
-#### Step 5. Prepare nodes tibble data frame
+##### Step 5. Prepare nodes tibble data frame
 
 ```{r}
 #| code-fold: true
@@ -214,9 +214,9 @@ nodes_df <- mc2_graph %>%
   select(id, label)
 ```
 
-##Visualise the Network graph
+## Visualise the Network graph
 
-#### Network plot
+##### Network plot
 
 ```{r}
 #| code-fold: true
