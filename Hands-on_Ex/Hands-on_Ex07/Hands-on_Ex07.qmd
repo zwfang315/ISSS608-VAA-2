@@ -1,0 +1,285 @@
+---
+title: "Hands on Exercise 7"
+---
+
+# **Visualising and Analysing Time-oriented Data**
+
+## Load packages
+
+```{r}
+pacman::p_load(scales, viridis, lubridate, ggthemes, gridExtra, readxl, knitr, data.table, CGPfunctions, ggHoriPlot, tidyverse)
+```
+
+## Data Import
+
+```{r}
+attacks <- read_csv("data/eventlog.csv")
+```
+
+### Data Overview
+
+```{r}
+kable(head(attacks))
+```
+
+## Data Preparation 
+
+### Step 1: Deriving weekday and hour of day fields
+
+```{r}
+make_hr_wkday <- function(ts, sc, tz) {
+  real_times <- ymd_hms(ts, 
+                        tz = tz[1], 
+                        quiet = TRUE)
+  dt <- data.table(source_country = sc,
+                   wkday = weekdays(real_times),
+                   hour = hour(real_times))
+  return(dt)
+  }
+
+```
+
+### Step 2: Deriving the attacks tibble data frame
+
+```{r}
+wkday_levels <- c('Saturday', 'Friday', 
+                  'Thursday', 'Wednesday', 
+                  'Tuesday', 'Monday', 
+                  'Sunday')
+
+attacks <- attacks %>%
+  group_by(tz) %>%
+  do(make_hr_wkday(.$timestamp, 
+                   .$source_country, 
+                   .$tz)) %>% 
+  ungroup() %>% 
+  mutate(wkday = factor(
+    wkday, levels = wkday_levels),
+    hour  = factor(
+      hour, levels = 0:23))
+
+
+```
+
+### Data Overview after calculating 'hour'
+
+```{r}
+kable(head(attacks))
+
+
+```
+
+## Building the Calendar Heatmaps
+
+```{r}
+grouped <- attacks %>% 
+  count(wkday, hour) %>% 
+  ungroup() %>%
+  na.omit()
+
+ggplot(grouped, 
+       aes(hour, 
+           wkday, 
+           fill = n)) + 
+geom_tile(color = "white", 
+          size = 0.1) + 
+theme_tufte(base_family = "Helvetica") + 
+coord_equal() +
+scale_fill_gradient(name = "# of attacks",
+                    low = "sky blue", 
+                    high = "dark blue") +
+labs(x = NULL, 
+     y = NULL, 
+     title = "Attacks by weekday and time of day") +
+theme(axis.ticks = element_blank(),
+      plot.title = element_text(hjust = 0.5),
+      legend.title = element_text(size = 8),
+      legend.text = element_text(size = 6) )
+```
+
+## Building Multiple Calendar Heatmaps
+
+### Data Preparation 
+
+#### Step 1: Get top 4 countries with the highest \# attacks
+
+```{r}
+attacks_by_country <- count(
+  attacks, source_country) %>%
+  mutate(percent = percent(n/sum(n))) %>%
+  arrange(desc(n))
+
+```
+
+#### Step 2: Preparing the tidy data frame
+
+```{r}
+top4 <- attacks_by_country$source_country[1:4]
+top4_attacks <- attacks %>%
+  filter(source_country %in% top4) %>%
+  count(source_country, wkday, hour) %>%
+  ungroup() %>%
+  mutate(source_country = factor(
+    source_country, levels = top4)) %>%
+  na.omit()
+
+
+```
+
+#### Step 3: Plot the multiple calendar heatmap
+
+```{r}
+ggplot(top4_attacks, 
+       aes(hour, 
+           wkday, 
+           fill = n)) + 
+  geom_tile(color = "white", 
+          size = 0.1) + 
+  theme_tufte(base_family = "Helvetica") + 
+  coord_equal() +
+  scale_fill_gradient(name = "# of attacks",
+                    low = "sky blue", 
+                    high = "dark blue") +
+  facet_wrap(~source_country, ncol = 2) +
+  labs(x = NULL, y = NULL, 
+     title = "Attacks on top 4 countries by weekday and time of day") +
+  theme(axis.ticks = element_blank(),
+        axis.text.x = element_text(size = 7),
+        plot.title = element_text(hjust = 0.5),
+        legend.title = element_text(size = 8),
+        legend.text = element_text(size = 6) )
+
+
+
+```
+
+# Plotting Cycle Plot
+
+## Data Import
+
+```{r}
+air <- read_excel("data/arrivals_by_air.xlsx")
+
+```
+
+## Data preparation 
+
+### Step 1: Derive month and year
+
+```{r}
+
+air$month <- factor(month(air$`Month-Year`), 
+                    levels=1:12, 
+                    labels=month.abb, 
+                    ordered=TRUE) 
+air$year <- year(ymd(air$`Month-Year`))
+
+
+```
+
+### Step 2: Extract target country Japan
+
+```{r}
+Japan <- air %>% 
+  select(`Japan`, 
+         month, 
+         year) %>%
+  filter(year >= 2010)
+
+
+```
+
+### Step 3: Compute year average arrivals by month
+
+```{r}
+hline.data <- Japan %>% 
+  group_by(month) %>%
+  summarise(avgvalue = mean(`Japan`))
+```
+
+### Step 4: Plotting the cycle plot
+
+```{r}
+ggplot() + 
+  geom_line(data=Japan,
+            aes(x=year, 
+                y=`Japan`, 
+                group=month), 
+            colour="black") +
+  geom_hline(aes(yintercept=avgvalue), 
+             data=hline.data, 
+             linetype=6, 
+             colour="red", 
+             size=0.5) + 
+  facet_grid(~month) +
+  labs(axis.text.x = element_blank(),
+       title = "Visitor arrivals from Japan by air, Jan 2010-Dec 2019") +
+  xlab("") +
+  ylab("No. of Visitors")
+
+
+```
+
+# Plotting Slopegraph 
+
+## Data Import
+
+```{r}
+rice <- read_csv("data/rice.csv")
+
+```
+
+## Plotting the slopegraph
+
+```{r}
+rice %>% 
+  mutate(Year = factor(Year)) %>%
+  filter(Year %in% c(1961, 1980)) %>%
+  newggslopegraph(Year, Yield, Country,
+                Title = "Rice Yield of Top 11 Asian Counties",
+                SubTitle = "1961-1980",
+                Caption = "Prepared by: Fang Zi Wei")
+
+```
+
+# Time one the Horizon: ggHoriPlot methods
+
+## Load packages
+
+```{r}
+pacman::p_load(ggHoriPlot, ggthemes, tidyverse)
+```
+
+## Data Import
+
+```{r}
+averp <- read_csv("data/AVERP.csv") %>%
+  mutate(`Date` = dmy(`Date`))
+```
+
+## Plotting the horizon graph
+
+```{r}
+averp %>% 
+  filter(Date >= "2018-01-01") %>%
+  ggplot() +
+  geom_horizon(aes(x = Date, y=Values), 
+               origin = "midpoint", 
+               horizonscale = 6)+
+  facet_grid(`Consumer Items`~.) +
+    theme_few() +
+  scale_fill_hcl(palette = 'RdBu') +
+  theme(panel.spacing.y=unit(0, "lines"), strip.text.y = element_text(
+    size = 5, angle = 0, hjust = 0),
+    legend.position = 'none',
+    axis.text.y = element_blank(),
+    axis.text.x = element_text(size=7),
+    axis.title.y = element_blank(),
+    axis.title.x = element_blank(),
+    axis.ticks.y = element_blank(),
+    panel.border = element_blank()
+    ) +
+    scale_x_date(expand=c(0,0), date_breaks = "3 month", date_labels = "%b%y") +
+  ggtitle('Average Retail Prices of Selected Consumer Items (Jan 2018 to Dec 2022)')
+
+```
