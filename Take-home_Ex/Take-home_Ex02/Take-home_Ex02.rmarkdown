@@ -130,7 +130,7 @@ distinct_mc2_edges_aggregated <- mc2_edges_aggregated %>%
   ungroup() %>%
   filter(distinct_count > 1)
 
-mc2_edges_aggregated <- mc2_edges_aggregated(mc2_edges_aggregated, distinct_mc2_edges_aggregated, by = c("source", "target"))
+mc2_edges_aggregated <- inner_join(mc2_edges_aggregated, distinct_mc2_edges_aggregated, by = c("source", "target"))
 frequency_pct <- mc2_edges_aggregated %>%
   group_by(source, target) %>%
   arrange(Year) %>%
@@ -171,7 +171,7 @@ company_list <- unique(mc2_edges_fishing_abnormal$source)
 
 ### List of illegal fishing companies
 
-companies that violates both red flags
+265 fishing entities violates both red flags
 
 
 ```{r}
@@ -228,7 +228,6 @@ illegal_fishing_company_nodes_extracted <- rename(illegal_fishing_company_nodes_
 mc2_graph <- tbl_graph(nodes = illegal_fishing_company_nodes_extracted,
                            edges = illegal_fishing_company_aggregated,
                            directed = TRUE)
-mc2_graph
 ```
 
 
