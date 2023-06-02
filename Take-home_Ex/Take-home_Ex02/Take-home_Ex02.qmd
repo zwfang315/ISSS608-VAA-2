@@ -231,6 +231,10 @@ visNetwork(nodes_df,
 ```
 
 # Top 10 illegal companies that have the most sudden changes over years
+Observation:
+Sea Breezes S.A. de C.V. Freight has the highest increase from 49 to 1458 shipping frequencies in just one year difference with over 2875 % increment.
+In 2029, Madhya Pradesh Market LLC had a shipping frequency of 36, however, in the subsequent year, 2030, the company experienced a complete absence of shipments, with 0 times recorded. In the subsequent year, 2031, the company experienced a remarkable surge in its shipping frequency, reaching an impressive count of 981. This significant increase showcases substantial growth and heightened shipping activity compared to the previous year. In 2032, the company's shipping frequency dropped to 291. However, in 2033, the shipping frequency once again dropped to zero, indicating a lack of activity. The trend continued into 2034, with no shipments recorded during that year as well.
+nián yú Ltd. Corporation experienced varying shipping frequencies over the years. In 2029, the company had a shipping frequency with 35 shipments. However, there was a significant drop in activity the following year, as the company did not have any shipments in 2030. In 2031, the shipping frequency rebounded and reached 46 shipments. The subsequent years demonstrated substantial growth, with 772 shipments in 2032, 966 shipments in 2033, and 121 shipments in 2034. 
 
 ::: panel-tabset
 ## The plot
@@ -243,36 +247,41 @@ mc2_edges_fishing <- mc2_edges_fishing %>%
   mutate(flag = ifelse(source %in% illegal_fishing_company_nodes_extracted$id, 
                        "illegal", 
                        "legal"))
-
 mc2_edges_fishing <- mc2_edges_fishing %>%
   mutate(value_weight_ratio = valueofgoodsusd / weightkg)
+
 mc2_edges_fishing_1 <- mc2_edges_fishing %>%
   filter(flag == "illegal") %>%
   group_by(source, target, Year) %>%
   summarise(shipment_frequency = n())
 
-mc2_edges_fishing_1 <- mc2_edges_fishing_1 %>%
-  arrange(source, Year) %>%
-  group_by(source) %>%
-  mutate(rolling_mean_frequency = rollmean(shipment_frequency, k = 2, fill = NA)) 
+distinct_pairings <- mc2_edges_fishing_1 %>%
+  group_by(source, target) %>%
+  summarize(distinct_count = n()) %>%
+  ungroup()
 
-mc2_edges_fishing_1 <- mc2_edges_fishing_1 %>%
-  mutate(rolling_diff_frequency = rolling_mean_frequency - lag(rolling_mean_frequency)) 
+distinct_pairings_filtered <- distinct_pairings %>%
+  filter(distinct_count > 3)
 
-mc2_edges_fishing_summary <- mc2_edges_fishing_1 %>%
-  group_by(source) %>%
-  summarise(max_change_frequency = max(abs(rolling_diff_frequency), na.rm = TRUE)) %>%
-  arrange(-max_change_frequency)
+matched_pairs <- inner_join(distinct_pairings_filtered, illegal_fishing_company_aggregated, by = c("source", "target"))
 
-top_companies <- mc2_edges_fishing_summary %>%
-  top_n(10, max_change_frequency)
-top_illegal_fishing_time_series <- illegal_fishing_company_aggregated %>%
-  filter(source %in% top_companies$source)
-p <- ggplot(data = top_illegal_fishing_time_series, aes(x = Year, y = weights, fill = source)) +
+shipping_frequency_change <- matched_pairs %>%
+  group_by(source, target) %>%
+  mutate(percentage_change = weights / lag(weights) - 1)
+
+significant_changes <- shipping_frequency_change %>%
+  group_by(Year, source, target) %>%
+  filter(abs(percentage_change) > 0.5) %>%
+  arrange(desc(percentage_change)) %>%
+  head(5)
+
+top_5_illegal_shipping_frequency <- inner_join(significant_changes, illegal_fishing_company_aggregated, by = c("source", "target"))
+
+p <- ggplot(data = top_5_illegal_shipping_frequency, aes(x = Year.y, y = weights.y, fill = source)) +
   geom_bar(stat = "identity", position = "dodge") +
   scale_x_continuous(breaks = seq(2028, 2034, by = 1)) +
   labs(x = "Date", y = "Shipment Frequency") +
-  ggtitle("Shipment Frequency Over Time for Top 10 Illegal Fishing") +
+  ggtitle("Shipment Frequency Over Time for Top 5 Illegal Fishing") +
   theme_minimal()
 ggplotly(p)
 ```
@@ -286,36 +295,41 @@ mc2_edges_fishing <- mc2_edges_fishing %>%
   mutate(flag = ifelse(source %in% illegal_fishing_company_nodes_extracted$id, 
                        "illegal", 
                        "legal"))
-
 mc2_edges_fishing <- mc2_edges_fishing %>%
   mutate(value_weight_ratio = valueofgoodsusd / weightkg)
+
 mc2_edges_fishing_1 <- mc2_edges_fishing %>%
   filter(flag == "illegal") %>%
   group_by(source, target, Year) %>%
   summarise(shipment_frequency = n())
 
-mc2_edges_fishing_1 <- mc2_edges_fishing_1 %>%
-  arrange(source, Year) %>%
-  group_by(source) %>%
-  mutate(rolling_mean_frequency = rollmean(shipment_frequency, k = 2, fill = NA)) 
+distinct_pairings <- mc2_edges_fishing_1 %>%
+  group_by(source, target) %>%
+  summarize(distinct_count = n()) %>%
+  ungroup()
 
-mc2_edges_fishing_1 <- mc2_edges_fishing_1 %>%
-  mutate(rolling_diff_frequency = rolling_mean_frequency - lag(rolling_mean_frequency)) 
+distinct_pairings_filtered <- distinct_pairings %>%
+  filter(distinct_count > 3)
 
-mc2_edges_fishing_summary <- mc2_edges_fishing_1 %>%
-  group_by(source) %>%
-  summarise(max_change_frequency = max(abs(rolling_diff_frequency), na.rm = TRUE)) %>%
-  arrange(-max_change_frequency)
+matched_pairs <- inner_join(distinct_pairings_filtered, illegal_fishing_company_aggregated, by = c("source", "target"))
 
-top_companies <- mc2_edges_fishing_summary %>%
-  top_n(10, max_change_frequency)
-top_illegal_fishing_time_series <- illegal_fishing_company_aggregated %>%
-  filter(source %in% top_companies$source)
-p <- ggplot(data = top_illegal_fishing_time_series, aes(x = Year, y = weights, fill = source)) +
+shipping_frequency_change <- matched_pairs %>%
+  group_by(source, target) %>%
+  mutate(percentage_change = weights / lag(weights) - 1)
+
+significant_changes <- shipping_frequency_change %>%
+  group_by(Year, source, target) %>%
+  filter(abs(percentage_change) > 0.5) %>%
+  arrange(desc(percentage_change)) %>%
+  head(5)
+
+top_5_illegal_shipping_frequency <- inner_join(significant_changes, illegal_fishing_company_aggregated, by = c("source", "target"))
+
+p <- ggplot(data = top_5_illegal_shipping_frequency, aes(x = Year.y, y = weights.y, fill = source)) +
   geom_bar(stat = "identity", position = "dodge") +
   scale_x_continuous(breaks = seq(2028, 2034, by = 1)) +
   labs(x = "Date", y = "Shipment Frequency") +
-  ggtitle("Shipment Frequency Over Time for Top 10 Illegal Fishing") +
+  ggtitle("Shipment Frequency Over Time for Top 5 Illegal Fishing") +
   theme_minimal()
 ggplotly(p)
 ```
@@ -323,6 +337,7 @@ ggplotly(p)
 
 # Top 5 illegal fishing companies that have abnormal value-weight ratio across years
 
+Observation:
 From the line chart below, Playa de la Luna Incorporated has the most abnormal value-weight ratio, which got almost 400% decrease on value-weight ratio in one day difference. Therefore, means this company most likely perform an illegal fishing
 
 ::: panel-tabset
@@ -393,7 +408,7 @@ To uncover the most frequently utilized routes by illegal fishing companies,belo
 ::: panel-tabset
 ## The plot
 
-```{r fig.width=8, fig.height=8}
+```{r fig.width=8, fig.height=6}
 #| eval: true
 #| echo: false
 illegal_fishing_company_aggregated_1 <- illegal_fishing_company_aggregated %>%
