@@ -1,0 +1,519 @@
+---
+title: "Identify companies that fit a pattern of illegal fishing"
+subtitle: "Take Home Exercise 2"
+author: "FANG ZI WEI"
+date: "31 May 2023"
+date-modified: "`r Sys.Date()`"
+execute: 
+  eval: true
+  echo: true
+  warning: false
+editor: visual
+---
+
+
+# Data
+
+## Load Packages
+
+
+```{r}
+pacman::p_load(jsonlite,tidygraph,ggraph, visNetwork, tidyverse, lubridate, plotly, DT, zoo, dplyr, ggplot2, tidyr)
+```
+
+
+## Import Dataset
+
+
+```{r}
+MC2 <- jsonlite::fromJSON("data/mc2_challenge_graph.json")
+```
+
+
+## Data Wrangling
+
+### Step 1. Extract the nodes
+
+
+```{r}
+#| code-fold: true
+#| code-summary: Show code
+mc2_nodes <- as_tibble(MC2$nodes)%>%
+  select(id, shpcountry, rcvcountry)
+DT::datatable(mc2_nodes, class = "display")
+```
+
+
+### Step 2. Extract the edges
+
+
+```{r}
+#| code-fold: true
+#| code-summary: Show code
+mc2_edges <- as_tibble(MC2$links) %>%
+  mutate(ArrivalDate = ymd(arrivaldate)) %>%
+  mutate(Year = year(ArrivalDate)) %>%
+  select(source, target, ArrivalDate, Year, hscode, valueofgoods_omu, 
+         volumeteu, weightkg, valueofgoodsusd) %>% 
+  distinct()
+DT::datatable(head(mc2_edges,20), class = "display")
+```
+
+
+### Step 3. Filter HSCode
+
+Our primary goal is to identify companies engaged in illegal fishing activities. In accordance with information from [external sources](https://connect2india.com/hs-classification.html), we need to focus on filtering out those companies with Harmonized System (HS) code prefixes ranging from 301 to 309.
+
+
+```{r}
+#| code-fold: true
+#| code-summary: Show code
+mc2_edges_fishing <- mc2_edges %>%
+  filter(str_sub(hscode, 1, 3) %in% c("301", "302", "303", "304", "305", "306", "307", "308", "309"))
+```
+
+
+### Step 4. Replace missing values in "valueofgoodsusd"
+
+We discovered that the columns "valueofgoodsusd" and "valueofgoods_omu" both contained missing values. Some rows, however, provided values in both of these columns. Utilizing this information, we were able to ascertain a conversion rate of 1.5384 (omu/usd). This conversion rate was subsequently employed to fill in the missing data in these columns.
+
+
+```{r}
+#| code-fold: true
+#| code-summary: Show code
+conversion_rate <- 1.5384 
+mc2_edges_fishing$valueofgoodsusd <- ifelse(is.na(mc2_edges_fishing$valueofgoodsusd), 
+                              round(mc2_edges_fishing$valueofgoods_omu / conversion_rate,0), 
+                              mc2_edges_fishing$valueofgoodsusd)
+mc2_edges_fishing <- mc2_edges_fishing %>%
+  select(source, target, ArrivalDate, Year, hscode,volumeteu, weightkg, valueofgoodsusd)
+```
+
+
+### Step 5. Shipment Frequency
+
+The frequency of shipments for each unique pair of source and target, differentiated by their respective Harmonized System (HS) code and year. We aggregate edges, get the shipment counts and filter out those shipment counts greater than 20
+
+
+```{r}
+#| code-fold: true
+#| code-summary: Show code
+mc2_edges_aggregated <- mc2_edges_fishing %>%
+  group_by(source, target, hscode, Year) %>%
+    summarise(weights = n()) %>%
+  filter(source!=target) %>%
+  filter(weights > 20) %>%
+  ungroup()
+```
+
+
+## Illegal Fishing Company
+
+To identify companies potentially involved in illegal fishing activities, we adopted a two approaches focusing on their shipment frequency and any abnormal fluctuations in shipment value over the years. Companies that exhibited both these characteristics were considered suspicious and were consequently flagged as possible illegal fishing entities.
+
+### Flag 1: Sudden Changes on shipment Frequency
+
+illegal fishing company significantly increases or decreases its shipment frequency suddenly, it can be a sign that the company is trying to avoid detection, manipulate market prices, or respond to changes in enforcement intensity.
+
+Approach: calculate an average shipping frequency over a 2 year period and get a list of companies with sudden changes in their shipment volume over each time period compared to their threshold.
+
+
+```{r}
+#| code-fold: true
+#| code-summary: Show code
+mc2_edges_aggregated <- mc2_edges_aggregated %>%
+  arrange(source, target, Year) %>%
+  group_by(source, target)
+distinct_mc2_edges_aggregated <- mc2_edges_aggregated %>%
+  group_by(source, target) %>%
+  summarize(distinct_count = n()) %>%
+  ungroup() %>%
+  filter(distinct_count > 1)
+
+mc2_edges_aggregated <- mc2_edges_aggregated(mc2_edges_aggregated, distinct_mc2_edges_aggregated, by = c("source", "target"))
+frequency_pct <- mc2_edges_aggregated %>%
+  group_by(source, target) %>%
+  arrange(Year) %>%
+  mutate(PercentageChange = weights / lag(weights) - 1)
+
+threshold <- 0.5
+mc2_sudden_changes <- frequency_pct %>%
+  filter(abs(PercentageChange) > threshold)
+
+company_list_frequency <- unique(mc2_sudden_changes$source)
+```
+
+
+### Flag 2: abnormal shipment values over years
+
+illegal fishing might under-declare the weight of their catch to minimize attention and lower duties or taxes. On the other side, might over-declare the value of their shipment to over-insure it. These would lead to an abnormally high value-weight ratio. 
+
+Approach: In order to detect irregularities in the declared value of goods, we analyze the shipment values and shipment weight ratios for each fishing entity. We establish a threshold value that captures the range within which 95% of the data in the `value_weight_ratio_change` variable falls. If the `value_weight_ratio_change` surpasses this threshold, we flag the corresponding fishing company as having an abnormal occurrence.
+
+
+```{r}
+#| code-fold: true
+#| code-summary: Show code
+
+mc2_edges_fishing_stats <- mc2_edges_fishing %>%
+  arrange(source, target, Year) %>%
+  group_by(source, target) %>%
+  mutate(value_weight_ratio = valueofgoodsusd / weightkg) %>%
+  mutate(value_weight_ratio_change = value_weight_ratio / lag(value_weight_ratio) - 1)
+
+threshold <- quantile(mc2_edges_fishing_stats$value_weight_ratio_change, 0.95, na.rm = TRUE) 
+
+mc2_edges_fishing_abnormal <- mc2_edges_fishing_stats %>%
+  filter(abs(value_weight_ratio_change) > threshold)
+company_list <- unique(mc2_edges_fishing_abnormal$source)
+```
+
+
+### List of illegal fishing companies
+
+companies that violates both red flags
+
+
+```{r}
+#| code-fold: true
+#| code-summary: Show code
+illegal_fishing_company <- intersect(company_list, company_list_frequency)
+illegal_fishing_company <- data.frame(Illegal_Fishing_Company = unlist(illegal_fishing_company))
+datatable(illegal_fishing_company, options = list(pageLength = 5))
+```
+
+
+## Network Analysis
+
+### Data Preparation
+
+##### Step 1. Filter edges that have the illegal fishing company
+
+
+```{r}
+#| code-fold: true
+#| code-summary: Show code
+illegal_fishing_company <- intersect(company_list, company_list_frequency)
+illegal_fishing_company_aggregated_source <- mc2_edges_aggregated %>%
+  filter(source %in% illegal_fishing_company) 
+illegal_fishing_company_aggregated_target <- mc2_edges_aggregated %>%
+  filter(target %in% illegal_fishing_company) 
+illegal_fishing_company_aggregated <- rbind(illegal_fishing_company_aggregated_source, illegal_fishing_company_aggregated_target)
+illegal_fishing_company_aggregated <- illegal_fishing_company_aggregated %>%
+  select(source, target, hscode, Year, weights)
+```
+
+
+##### Step 2. Filter nodes that have the illegal fishing company
+
+
+```{r}
+#| code-fold: true
+#| code-summary: Show code
+id1 <- illegal_fishing_company_aggregated$source
+id2 <- illegal_fishing_company_aggregated$target
+illegal_fishing_company_nodes_extracted <- c(id1, id2) 
+illegal_fishing_company_nodes_extracted <- unique(illegal_fishing_company_nodes_extracted)
+illegal_fishing_company_nodes_extracted <- data.frame(illegal_fishing_company_nodes_extracted)
+illegal_fishing_company_nodes_extracted <- rename(illegal_fishing_company_nodes_extracted, id = illegal_fishing_company_nodes_extracted)
+```
+
+
+##### Step 3. Build tidy graph data model
+
+
+```{r}
+#| code-fold: true
+#| code-summary: Show code
+mc2_graph <- tbl_graph(nodes = illegal_fishing_company_nodes_extracted,
+                           edges = illegal_fishing_company_aggregated,
+                           directed = TRUE)
+mc2_graph
+```
+
+
+##### Step 4. Prepare edges tibble data frame
+
+
+```{r}
+#| code-fold: true
+#| code-summary: Show code
+edges_df <- mc2_graph %>%
+  activate(edges) %>%
+  as_tibble()
+```
+
+
+##### Step 5. Prepare nodes tibble data frame
+
+
+```{r}
+#| code-fold: true
+#| code-summary: Show code
+nodes_df <- mc2_graph %>%
+  activate(nodes) %>%
+  as_tibble() %>%
+  rename(label = id) %>%
+  mutate(id=row_number()) %>%
+  select(id, label)
+```
+
+
+## Visualise the Network graph
+
+##### Network plot
+
+
+```{r}
+#| code-fold: true
+#| code-summary: Show code
+visNetwork(nodes_df,
+           edges_df) %>%
+  visIgraphLayout(layout = "layout_with_kk") %>%
+  visOptions(highlightNearest = TRUE,
+             nodesIdSelection = TRUE) %>%
+  visLegend() %>%
+  visLayout(randomSeed = 123)
+```
+
+
+# Top 10 illegal companies that have the most sudden changes over years
+Observation:
+
+Sea Breezes S.A. de C.V. Freight has the highest increase from 49 to 1458 shipping frequencies in just one year difference with over 2875 % increment.
+In 2029, Madhya Pradesh Market LLC had a shipping frequency of 36, however, in the subsequent year, 2030, the company experienced a complete absence of shipments, with 0 times recorded. In the subsequent year, 2031, the company experienced a remarkable surge in its shipping frequency, reaching an impressive count of 981. This significant increase showcases substantial growth and heightened shipping activity compared to the previous year. In 2032, the company's shipping frequency dropped to 291. However, in 2033, the shipping frequency once again dropped to zero, indicating a lack of activity. The trend continued into 2034, with no shipments recorded during that year as well.
+nián yú Ltd. Corporation experienced varying shipping frequencies over the years. In 2029, the company had a shipping frequency with 35 shipments. However, there was a significant drop in activity the following year, as the company did not have any shipments in 2030. In 2031, the shipping frequency rebounded and reached 46 shipments. The subsequent years demonstrated substantial growth, with 772 shipments in 2032, 966 shipments in 2033, and 121 shipments in 2034. 
+
+::: panel-tabset
+## The plot
+
+
+```{r}
+#| eval: true
+#| echo: false
+mc2_edges_fishing <- mc2_edges_fishing %>%
+  select(source, target, ArrivalDate, Year, hscode, volumeteu, weightkg, valueofgoodsusd)%>%
+  mutate(flag = ifelse(source %in% illegal_fishing_company_nodes_extracted$id, 
+                       "illegal", 
+                       "legal"))
+mc2_edges_fishing <- mc2_edges_fishing %>%
+  mutate(value_weight_ratio = valueofgoodsusd / weightkg)
+
+mc2_edges_fishing_1 <- mc2_edges_fishing %>%
+  filter(flag == "illegal") %>%
+  group_by(source, target, Year) %>%
+  summarise(shipment_frequency = n())
+
+distinct_pairings <- mc2_edges_fishing_1 %>%
+  group_by(source, target) %>%
+  summarize(distinct_count = n()) %>%
+  ungroup()
+
+distinct_pairings_filtered <- distinct_pairings %>%
+  filter(distinct_count > 3)
+
+matched_pairs <- inner_join(distinct_pairings_filtered, illegal_fishing_company_aggregated, by = c("source", "target"))
+
+shipping_frequency_change <- matched_pairs %>%
+  group_by(source, target) %>%
+  mutate(percentage_change = weights / lag(weights) - 1)
+
+significant_changes <- shipping_frequency_change %>%
+  group_by(Year, source, target) %>%
+  filter(abs(percentage_change) > 0.5) %>%
+  arrange(desc(percentage_change)) %>%
+  head(5)
+
+top_5_illegal_shipping_frequency <- inner_join(significant_changes, illegal_fishing_company_aggregated, by = c("source", "target"))
+
+p <- ggplot(data = top_5_illegal_shipping_frequency, aes(x = Year.y, y = weights.y, fill = source)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  scale_x_continuous(breaks = seq(2028, 2034, by = 1)) +
+  labs(x = "Date", y = "Shipment Frequency") +
+  ggtitle("Shipment Frequency Over Time for Top 5 Illegal Fishing") +
+  theme_minimal()
+ggplotly(p)
+```
+
+
+## Code
+
+
+```{r}
+#| eval: false
+mc2_edges_fishing <- mc2_edges_fishing %>%
+  select(source, target, ArrivalDate, Year, hscode, volumeteu, weightkg, valueofgoodsusd)%>%
+  mutate(flag = ifelse(source %in% illegal_fishing_company_nodes_extracted$id, 
+                       "illegal", 
+                       "legal"))
+mc2_edges_fishing <- mc2_edges_fishing %>%
+  mutate(value_weight_ratio = valueofgoodsusd / weightkg)
+
+mc2_edges_fishing_1 <- mc2_edges_fishing %>%
+  filter(flag == "illegal") %>%
+  group_by(source, target, Year) %>%
+  summarise(shipment_frequency = n())
+
+distinct_pairings <- mc2_edges_fishing_1 %>%
+  group_by(source, target) %>%
+  summarize(distinct_count = n()) %>%
+  ungroup()
+
+distinct_pairings_filtered <- distinct_pairings %>%
+  filter(distinct_count > 3)
+
+matched_pairs <- inner_join(distinct_pairings_filtered, illegal_fishing_company_aggregated, by = c("source", "target"))
+
+shipping_frequency_change <- matched_pairs %>%
+  group_by(source, target) %>%
+  mutate(percentage_change = weights / lag(weights) - 1)
+
+significant_changes <- shipping_frequency_change %>%
+  group_by(Year, source, target) %>%
+  filter(abs(percentage_change) > 0.5) %>%
+  arrange(desc(percentage_change)) %>%
+  head(5)
+
+top_5_illegal_shipping_frequency <- inner_join(significant_changes, illegal_fishing_company_aggregated, by = c("source", "target"))
+
+p <- ggplot(data = top_5_illegal_shipping_frequency, aes(x = Year.y, y = weights.y, fill = source)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  scale_x_continuous(breaks = seq(2028, 2034, by = 1)) +
+  labs(x = "Date", y = "Shipment Frequency") +
+  ggtitle("Shipment Frequency Over Time for Top 5 Illegal Fishing") +
+  theme_minimal()
+ggplotly(p)
+```
+
+:::
+
+# Top 5 illegal fishing companies that have abnormal value-weight ratio across years
+
+Observation:
+
+Madhya Pradesh Ltd. Liability Co Freight maintained a relatively steady average value weight ratio of 6-7% from 2029 to the end of 2034. However, an extraordinary surge occurred on March 31, 2031, with a staggering 13212% increase. To investigate this peculiar behavior, we examined the raw data for that specific date. We discovered two shipments, both weighing 15 kilograms. The first shipment had a declared goods value of only 90, whereas the second shipment reported a value of 198185. This findings raise suspicion that the fishing company intentionally under reported the value of their goods, potentially engaging in fraudulent practices.
+
+Adriatic Tuna Ltd. Liability Co exhibited a consistent average value weight ratio ranging from 2% to 5% between the years 2028 and 2033. However, an extraordinary surge occurred on October 6, 2030, with a remarkable increase of 9305% in the value weight ratio. To investigate this unusual behavior, a closer examination of the raw data was conducted. On October 6, 2030, the company made four shipments, one of which displayed a peculiar pattern: despite a relatively low weight of 20 kg, it had a remarkably high value of goods amounting to 186115. The remaining three shipments, on the other hand, exhibited an average value weight ratio of 7% for that day. This prompts us to suspect that this fishing company tends to avoid excessive charges based on the weight of the shipments.
+
+::: panel-tabset
+## The plot
+
+
+```{r fig.width=10, fig.height=8}
+#| eval: true
+#| echo: false
+mc2_edges_fishing_2 <- mc2_edges_fishing %>%
+  arrange(source, Year) %>%
+  group_by(source) %>%
+  mutate(value_weight_ratio_change = value_weight_ratio / lag(value_weight_ratio) - 1)
+threshold <- quantile(mc2_edges_fishing_2$value_weight_ratio_change, 0.95, na.rm = TRUE) 
+top_abnormal_companies <- mc2_edges_fishing_2 %>%
+  filter(value_weight_ratio_change > threshold, flag == "illegal") %>%
+  group_by(source) %>%
+  summarise(max_increase = max(value_weight_ratio_change)) %>%
+  arrange(desc(max_increase)) %>%
+  head(6)
+top_abnormal_companies <- top_abnormal_companies[-3, ]
+top_5_ids <- top_abnormal_companies$source
+top_5_df <- mc2_edges_fishing_2 %>% 
+  filter(source %in% top_5_ids)
+p <- ggplot(top_5_df, aes(x = ArrivalDate, y = value_weight_ratio, color = factor(source))) +
+  geom_line() +
+  labs(title = "Top 5 illegal fishing companies that have abnormal Value Weight Ratio Over Time",
+       x = "Arrival Date",
+       y = "Value Weight Ratio",
+       color = "illegal Fishing company") +
+  theme_minimal()
+ggplotly(p)
+```
+
+
+## Code
+
+
+```{r fig.width=8, fig.height=6}
+#| eval: false
+mc2_edges_fishing_2 <- mc2_edges_fishing %>%
+  arrange(source, Year) %>%
+  group_by(source) %>%
+  mutate(value_weight_ratio_change = value_weight_ratio / lag(value_weight_ratio) - 1)
+threshold <- quantile(mc2_edges_fishing_2$value_weight_ratio_change, 0.95, na.rm = TRUE) 
+top_abnormal_companies <- mc2_edges_fishing_2 %>%
+  filter(value_weight_ratio_change > threshold, flag == "illegal") %>%
+  group_by(source) %>%
+  summarise(max_increase = max(value_weight_ratio_change)) %>%
+  arrange(desc(max_increase)) %>%
+  head(6)
+top_abnormal_companies <- top_abnormal_companies[-3, ]
+top_5_ids <- top_abnormal_companies$source
+top_5_df <- mc2_edges_fishing_2 %>% 
+  filter(source %in% top_5_ids)
+p <- ggplot(top_5_df, aes(x = ArrivalDate, y = value_weight_ratio, color = factor(source))) +
+  geom_line() +
+  labs(title = "Top 5 illegal fishing companies that have abnormal Value Weight Ratio Over Time",
+       x = "Arrival Date",
+       y = "Value Weight Ratio",
+       color = "illegal Fishing company") +
+  theme_minimal()
+ggplotly(p)
+```
+
+:::
+
+# Heatmap on illegal fish shipping route
+
+To uncover the most frequently utilized routes by illegal fishing companies,below heat map provides a clear representation of the shipping frequency between the origin and destination countries, thereby highlighting the routes that are potentially preferred by companies engaged in illegal activities. 
+
+Observation: Among companies involved in illegal fishing activities, the shipping route from Merigrad to Oceanus is the most frequently used, with 47 thousand shipments. This is followed by the routes from Isliandor to Coralmarica, and Vesperanda to Oceanus.
+
+::: panel-tabset
+## The plot
+
+
+```{r fig.width=8, fig.height=6}
+#| eval: true
+#| echo: false
+illegal_fishing_company_aggregated_1 <- illegal_fishing_company_aggregated %>%
+  left_join(mc2_nodes, by = c("source" = "id"))
+illegal_fishing_company_aggregated_1 <- illegal_fishing_company_aggregated_1[!is.na(illegal_fishing_company_aggregated_1$rcvcountry), ]
+
+illegal_fishing_company_aggregated_1 <- illegal_fishing_company_aggregated_1 %>%
+  group_by(shpcountry, rcvcountry) %>%
+  summarise(total_weight = sum(weights, na.rm = TRUE))
+
+ggplot(illegal_fishing_company_aggregated_1, aes(x = shpcountry, y = rcvcountry, fill = total_weight)) +
+  geom_tile() +
+  scale_fill_gradient(low = "yellow", high = "red",
+                      limits = c(min(illegal_fishing_company_aggregated_1$total_weight), 50000)) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+        panel.background = element_rect(fill = "lightgrey")) +
+  labs(x = "Shipping Country", y = "Receiving Country", fill = "Frequency")+
+  geom_text(aes(label = total_weight), color = "black", size = 1.5) 
+```
+
+
+## Code
+
+
+```{r fig.width=10, fig.height=8}
+#| eval: false
+illegal_fishing_company_aggregated_1 <- illegal_fishing_company_aggregated %>%
+  left_join(mc2_nodes, by = c("source" = "id"))
+illegal_fishing_company_aggregated_1 <- illegal_fishing_company_aggregated_1[!is.na(illegal_fishing_company_aggregated_1$rcvcountry), ]
+
+illegal_fishing_company_aggregated_1 <- illegal_fishing_company_aggregated_1 %>%
+  group_by(shpcountry, rcvcountry) %>%
+  summarise(total_weight = sum(weights, na.rm = TRUE))
+
+ggplot(illegal_fishing_company_aggregated_1, aes(x = shpcountry, y = rcvcountry, fill = total_weight)) +
+  geom_tile() +
+  scale_fill_gradient(low = "yellow", high = "red",
+                      limits = c(min(illegal_fishing_company_aggregated_1$total_weight), 50000)) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+        panel.background = element_rect(fill = "lightgrey")) +
+  labs(x = "Shipping Country", y = "Receiving Country", fill = "Frequency")+
+  geom_text(aes(label = total_weight), color = "black", size = 1.5) 
+```
+
+:::
+
