@@ -1,0 +1,615 @@
+---
+title: "Visual analytics process to find similar businesses"
+subtitle: "Take Home Exercise 3"
+author: "FANG ZI WEI"
+date: "9 June 2023"
+date-modified: "`r Sys.Date()`"
+execute: 
+  eval: true
+  echo: true
+  warning: false
+editor: visual
+---
+
+The objective of this challenge is to utilize the visual analytics process to identify and categorize the products and services offered by companies based on their similarity. To achieve this, we will utilize **Topic modeling** **(LDA)**, to extract the main objectives from each group. Through this method, we can assign topics to business group based on their product_service description. Subsequently, we will proceed to cluster the companies together based on their similarities.
+
+# Data Import
+
+```{r}
+MC3 <- jsonlite::fromJSON("data/MC3.json")
+```
+
+## Load packages
+
+```{r}
+pacman::p_load(jsonlite, tidygraph, ggraph, 
+               visNetwork, graphlayouts, ggforce, 
+               skimr, tidytext, tidyverse, SnowballC, hunspell, textstem, udpipe, dplyr, tm, text2vec, topicmodels, widyr, textmineR, topicdoc, fpc, cluster, ggplot2, scales, plotly, wordcloud, RColorBrewer, gridExtra, grid, forcats)
+
+```
+
+## Extracting edges
+
+```{r}
+mc3_edges <- as_tibble(MC3$links) %>% 
+  distinct() %>%
+  mutate(source = as.character(source),
+         target = as.character(target),
+         type = as.character(type)) %>%
+  group_by(source, target, type) %>%
+    summarise(weights = n()) %>%
+  filter(source!=target) %>%
+  ungroup()
+
+```
+
+## Extracting nodes
+
+```{r}
+mc3_nodes <- as_tibble(MC3$nodes) %>%
+  mutate(country = as.character(country),
+         id = as.character(id),
+         product_services = as.character(product_services),
+         revenue_omu = as.numeric(as.character(revenue_omu)),
+         type = as.character(type)) %>%
+  select(id, country, type, revenue_omu, product_services)
+
+```
+
+# Find out similar business groups
+
+## Data preparation
+
+### Step 1. Address missing values replace character(0) with NA, and drop those NAs
+
+```{r}
+#| code-fold: true
+#| code-summary: Show code
+mc3_nodes <- mc3_nodes %>%
+  mutate(product_services = ifelse(product_services == "character(0)", NA, product_services)) %>%
+  mutate(product_services = ifelse(product_services == "Unknown", NA, product_services))%>%
+  drop_na(product_services)
+```
+
+### Step 2: Tokenization and remove non-alphabets
+
+```{r}
+#| code-fold: true
+#| code-summary: Show code
+token_nodes <- mc3_nodes %>%
+  unnest_tokens(word, 
+                product_services)%>%
+
+  mutate(word = str_replace_all(word, "[^a-z]", "")) %>%
+  filter(word != "")
+```
+
+### Step 3: lemmatization
+
+```{r}
+#| code-fold: true
+#| code-summary: Show code
+token_nodes$word <- lemmatize_words(token_nodes$word)
+```
+
+### Step 4: remove stopwords
+
+```{r}
+#| code-fold: true
+#| code-summary: Show code
+data("stop_words")
+token_nodes <- token_nodes %>%
+  anti_join(stop_words)
+```
+
+### Step 5: remove words that are not in the dictionary
+
+```{r}
+#| code-fold: true
+#| code-summary: Show code
+token_nodes <- token_nodes %>%
+  filter(hunspell_check(word))
+```
+
+### Step 6: keep only nouns
+
+```{r}
+#| code-fold: true
+#| code-summary: Show code
+ud_model <- udpipe_download_model(language = "english")
+ud_model <- udpipe_load_model(ud_model$file_model)
+
+token_nodes_filter <- udpipe_annotate(ud_model, x = token_nodes$word)
+token_nodes_filter <- as.data.frame(token_nodes_filter)
+token_nodes_filter <- token_nodes_filter[token_nodes_filter$upos == "NOUN", ]
+token_nodes_filter <- token_nodes_filter %>% 
+  select(lemma, upos) %>%
+  distinct(lemma, upos)
+
+token_nodes_table <- left_join(token_nodes, token_nodes_filter, by = c("word" = "lemma")) %>%
+  drop_na(upos) %>%
+  select(id, country, type, revenue_omu, word)
+```
+
+### Step 7: adding custom into stopwords
+
+```{r}
+custom_stop_words <- bind_rows(stop_words, tibble(word = c( "product", "service", "system", "process", "offer", "range", "supply", "solution", "source",
+"freelance", "researcher", "management", "component", "manufacturing", "distribution", "tool", "care",
+"industry", "service", "raw", "specialty", "home", "item", "specialty", "activity", "control", "line", "production", "prepared", "development", "product", "include", "business", "commercial", "die", "application", "industry", "international", "preparation", "special", "based", "natural",  "building", "build", "personal", "type",  "appliance",  "variety", "head", "ingredient", "series", "smoke", "material"), lexicon = c("en")))
+
+token_nodes_table <- token_nodes_table %>%
+  anti_join(custom_stop_words)
+```
+
+### Step 8: Retain the words that have a frequency of more than 5.
+
+```{r}
+#| code-fold: true
+#| code-summary: Show code
+word_counts <- token_nodes_table %>%
+  count(word, sort = TRUE)
+
+# Filter out words with count less than 5
+filtered_table <- word_counts %>%
+  filter(n >= 5)
+
+token_nodes_table <- semi_join(token_nodes_table, filtered_table, by = "word")
+```
+
+## Visualise the unique words in product service field
+
+::: panel-tabset
+## The plot
+
+```{r}
+#| eval: true
+#| echo: false
+token_nodes_table %>%
+  count(word, sort = TRUE) %>%
+  top_n(15) %>%
+  mutate(word = reorder(word, n)) %>%
+  ggplot(aes(x = word, y = n)) +
+  geom_col() +
+  xlab(NULL) +
+  coord_flip() +
+      labs(x = "Count",
+      y = "Unique words",
+      title = "Count of unique words found in product_services field")
+```
+
+## The Code
+
+```{r}
+#| eval: false
+token_nodes_table %>%
+  count(word, sort = TRUE) %>%
+  top_n(15) %>%
+  mutate(word = reorder(word, n)) %>%
+  ggplot(aes(x = word, y = n)) +
+  geom_col() +
+  xlab(NULL) +
+  coord_flip() +
+      labs(x = "Count",
+      y = "Unique words",
+      title = "Count of unique words found in product_services field")
+```
+:::
+
+## LDA
+
+### Create a Document-Term Matrix (DTM):
+
+```{r}
+#| code-fold: false
+#| code-summary: Show code
+# group the product services keywords of the same company into a row
+token_nodes_table <- token_nodes_table %>%
+  group_by(id) %>%
+  summarise(product_services = paste(word, collapse = " "))
+
+corpus <- Corpus(VectorSource(token_nodes_table$product_services))
+nodes_dtm <- DocumentTermMatrix(corpus, control = list(tolower = TRUE, removePunctuation = TRUE, stopwords = TRUE))
+dtm_matrix <- as.matrix(nodes_dtm)
+```
+
+### Compute Coherence Score
+
+Determining the optimal number of topics based on the highest coherence score suggests that having 6 topics is ideal.
+
+```{r}
+#| code-fold: false
+#| code-summary: Show code
+#| eval: true
+k <- 15
+set.seed(1234)
+lda_model <- LDA(nodes_dtm, k, method="Gibbs", control=list(iter = 500, verbose = 25))
+coherence <- topic_coherence(lda_model, nodes_dtm, top_n_tokens = 10, smoothing_beta = 1)
+k_values <- 1:15
+coherence_table <- data.frame(k = k_values, "coherence score" = coherence)
+coherence_table
+```
+
+### Build LDA for topic modelling
+
+```{r}
+K <- 6
+set.seed(1234)
+# compute the LDA model, inference via 1000 iterations of Gibbs sampling
+topicModel <- LDA(nodes_dtm, K, method="Gibbs", control=list(iter = 500, verbose = 25))
+```
+
+## Word Cloud
+
+Below are the word clouds for each topic, representing the most frequent and significant words within each topic.
+
+Topic 1: Manufacturing and construction Industry. Companies may specialize in working with steel and casting, utilizing machinery and power for their operations.
+
+Topic 2: Seafood Industry. Company is likely involved in the seafood industry, specifically dealing with shrimp, salmon, fillet, shellfish, marine products, crab, cod, seafood, fish, and tuna. They may be engaged in activities such as fishing, processing, and selling various types of seafood products.
+
+Topic 3: Logistics and transportation service Industry. Companies may specializes in cargo handling and storage solutions, offering efficient air, sea, and truck transportation services. They provide reliable shipping and delivery options, including container logistics and warehouse management. Their expertise lies in facilitating the smooth movement of goods, ensuring timely and secure transportation throughout the supply chain.
+
+Topic 4: Manufacturing and retail industry. Companies may operate in the retail or consumer goods industry. "rubber" could indicate that the company uses or specializes in rubber-based materials or products. It appears that the company's business revolves around the production or sale of consumer goods, particularly in the fashion and home furnishing sectors.
+
+Topic 5: Food Industry. Companies involved in the production, packaging, and distribution of various food products.
+
+Topic 6: Manufacturing and supply of products/resources.
+
+::: panel-tabset
+## Topic 1
+
+```{r}
+#| eval: true
+#| echo: false
+terms <- topicModel@terms
+beta <- topicModel@beta
+n_words <- 10
+for (k in 1) { 
+  prob <- beta[k, ]
+  words <- terms[order(prob, decreasing = TRUE)][1:n_words]
+  prob <- prob[order(prob, decreasing = TRUE)][1:n_words]
+  prob <- prob / sum(prob)
+  df <- data.frame(word = words, freq = prob)
+  wc <- wordcloud(words = df$word, freq = df$freq, min.freq = 1,
+            max.words = n_words, scale=c(4, 0.3), random.order = FALSE, rot.per = 0.35, colors = brewer.pal(8, "Dark2"), main = paste("Topic", k))
+}
+grid.draw(wc)
+```
+
+## Topic 2
+
+```{r}
+#| eval: true
+#| echo: false
+terms <- topicModel@terms
+beta <- topicModel@beta
+
+n_words <- 10
+for (k in 2) { 
+  prob <- beta[k, ]
+  words <- terms[order(prob, decreasing = TRUE)][1:n_words]
+  prob <- prob[order(prob, decreasing = TRUE)][1:n_words]
+  prob <- prob / sum(prob)
+  df <- data.frame(word = words, freq = prob)
+  wc <- wordcloud(words = df$word, freq = df$freq, min.freq = 1,
+            max.words = n_words, scale=c(4, 0.3), random.order = FALSE, rot.per = 0.35, colors = brewer.pal(8, "Dark2"), main = paste("Topic", k))
+}
+grid.draw(wc)
+```
+
+## Topic 3
+
+```{r}
+#| eval: true
+#| echo: false
+terms <- topicModel@terms
+beta <- topicModel@beta
+n_words <- 10
+
+for (k in 3) { 
+  prob <- beta[k, ]
+  words <- terms[order(prob, decreasing = TRUE)][1:n_words]
+  prob <- prob[order(prob, decreasing = TRUE)][1:n_words]
+  prob <- prob / sum(prob)
+  df <- data.frame(word = words, freq = prob)
+  wc <- wordcloud(words = df$word, freq = df$freq, min.freq = 1,
+            max.words = n_words, scale=c(4, 0.3), random.order = FALSE, rot.per = 0.35, colors = brewer.pal(8, "Dark2"), main = paste("Topic", k))
+}
+grid.draw(wc)
+```
+
+## Topic 4
+
+```{r}
+#| eval: true
+#| echo: false
+terms <- topicModel@terms
+beta <- topicModel@beta
+n_words <- 10
+for (k in 4) { 
+  prob <- beta[k, ]
+  words <- terms[order(prob, decreasing = TRUE)][1:n_words]
+  prob <- prob[order(prob, decreasing = TRUE)][1:n_words]
+  prob <- prob / sum(prob)
+  df <- data.frame(word = words, freq = prob)
+  wc <- wordcloud(words = df$word, freq = df$freq, min.freq = 1,
+            max.words = n_words, scale=c(4, 0.3), random.order = FALSE, rot.per = 0.35, colors = brewer.pal(8, "Dark2"), main = paste("Topic", k))
+}
+grid.draw(wc)
+```
+
+## Topic 5
+
+```{r}
+#| eval: true
+#| echo: false
+terms <- topicModel@terms
+beta <- topicModel@beta
+n_words <- 10
+for (k in 5) { 
+  prob <- beta[k, ]
+  words <- terms[order(prob, decreasing = TRUE)][1:n_words]
+  prob <- prob[order(prob, decreasing = TRUE)][1:n_words]
+  prob <- prob / sum(prob)
+  df <- data.frame(word = words, freq = prob)
+  wc <- wordcloud(words = df$word, freq = df$freq, min.freq = 1,
+            max.words = n_words, scale=c(4, 0.3), random.order = FALSE, rot.per = 0.35, colors = brewer.pal(8, "Dark2"), main = paste("Topic", k))
+}
+grid.draw(wc)
+
+```
+
+## Topic 6
+
+```{r}
+#| eval: true
+#| echo: false
+terms <- topicModel@terms
+beta <- topicModel@beta
+n_words <- 10
+for (k in 6) { 
+  prob <- beta[k, ]
+  words <- terms[order(prob, decreasing = TRUE)][1:n_words]
+  prob <- prob[order(prob, decreasing = TRUE)][1:n_words]
+  prob <- prob / sum(prob)
+  df <- data.frame(word = words, freq = prob)
+  wc <- wordcloud(words = df$word, freq = df$freq, min.freq = 1,
+            max.words = n_words, scale=c(4, 0.3), random.order = FALSE, rot.per = 0.35, colors = brewer.pal(8, "Dark2"), main = paste("Topic", k))
+}
+grid.draw(wc)
+```
+
+## The Code
+
+```{r}
+#| eval: false
+terms <- topicModel@terms
+beta <- topicModel@beta
+
+# Number of words to show for each topic
+n_words <- 10
+
+# Create a word cloud for each topic
+for (k in 1:6) { 
+  prob <- beta[k, ]
+  words <- terms[order(prob, decreasing = TRUE)][1:n_words]
+  prob <- prob[order(prob, decreasing = TRUE)][1:n_words]
+  prob <- prob / sum(prob)
+  df <- data.frame(word = words, freq = prob)
+  wc <- wordcloud(words = df$word, freq = df$freq, min.freq = 1,
+            max.words = n_words, scale=c(4, 0.3), random.order = FALSE, rot.per = 0.35, colors = brewer.pal(8, "Dark2"), main = paste("Topic", k))
+  plot_list[[k]] <- wc
+}
+grid_arrange <- grid.arrange(grobs = plot_list, nrow = 4, ncol = 3)
+grid.draw(grid_arrange)
+```
+:::
+
+### Assign topic to each company
+
+```{r}
+#| code-fold: true
+#| code-summary: Show code
+topic_word_probs <- tidy(topicModel, matrix = "beta")
+token_topic_words <- token_nodes_table %>%
+  unnest_tokens(word, 
+                product_services)
+company_topics <- left_join(token_topic_words, topic_word_probs, by = c("word" = "term"))
+company_topics <- company_topics %>%
+  group_by(id) %>%
+  top_n(1, beta) %>%
+  ungroup() %>%
+  select(id, topic, beta) 
+company_topics <- unique(company_topics)
+token_nodes_table$topic <- company_topics$topic
+token_nodes_table$TopicLabel <- ifelse(token_nodes_table$topic == 1, "Manufacturing and Construction Industry", ifelse(token_nodes_table$topic == 2, "Seafood Industry", ifelse(token_nodes_table$topic == 3, "Logistics and transportation service Industry", ifelse(token_nodes_table$topic == 4, "Manufacturing and retail industry", ifelse(token_nodes_table$topic == 5, "Food Industry", "Manufacturing and supply of products/resources")))))
+
+topic_map <- token_nodes_table %>%
+  select(id, TopicLabel)
+DT::datatable(topic_map)
+```
+
+### Distribution of companies in each topic
+
+::: panel-tabset
+## The plot
+
+```{r}
+#| eval: true
+#| echo: false
+topic_counts <- table(token_nodes_table$TopicLabel)
+topic_counts_df <- data.frame(topic = names(topic_counts), count = as.numeric(topic_counts)) %>%
+  mutate(topic = reorder(topic, count))
+bar_plot <- ggplot(topic_counts_df, aes(x = topic, y = count)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  labs(y = "Count", title = "Topic Distribution") +
+  theme_minimal() +
+  coord_flip() +
+  xlab(NULL) 
+ggplotly(bar_plot)
+```
+
+## The Code
+
+```{r}
+#| eval: false
+topic_counts <- table(token_nodes_table$TopicLabel)
+topic_counts_df <- data.frame(topic = names(topic_counts), count = as.numeric(topic_counts)) %>%
+  mutate(topic = reorder(topic, count))
+bar_plot <- ggplot(topic_counts_df, aes(x = topic, y = count)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  labs(y = "Count", title = "Topic Distribution") +
+  theme_minimal() +
+  coord_flip() +
+  xlab(NULL) 
+ggplotly(bar_plot)
+```
+:::
+
+## Clutser Analysis
+
+In addition to examining a company's product services, we can also perform clustering based on factors such as **revenue**, **country**, and **type**. By doing so, we can identify distinct clusters of companies and explore the unique characteristics associated with each cluster. This approach allows us to gain insights into how companies within each cluster differ in terms of their revenue, geographical location, and business type.
+
+### Find the optimal k cluster
+
+The elbow method is utilized to determine the appropriate number of topics. By examining the graph, it is evident that the optimal number of clusters is 3 based on the elbow point.
+
+::: panel-tabset
+## The plot
+
+```{r}
+#| eval: true
+#| echo: false
+company_cluster <- mc3_nodes[complete.cases(mc3_nodes$revenue_omu, mc3_nodes$country, mc3_nodes$type), ]
+cluster_data <- company_cluster[, c("revenue_omu", "type", "country")]
+cluster_data$type <- as.numeric(as.factor(cluster_data$type))
+cluster_data$country <- as.numeric(as.factor(cluster_data$country))
+wcss <- numeric(length = 9)
+
+for (k in 1:9) {
+  kmeans_model <- kmeans(cluster_data, centers = k)
+  wcss[k] <- kmeans_model$tot.withinss
+}
+
+# Plot the Elbow Method
+plot(1:9, wcss, type = "b", xlab = "Number of Clusters (k)", ylab = "WCSS")
+```
+
+## The Code
+
+```{r}
+#| eval: false
+company_cluster <- mc3_nodes[complete.cases(mc3_nodes$revenue_omu, mc3_nodes$country, mc3_nodes$type), ]
+cluster_data <- company_cluster[, c("revenue_omu", "type", "country")]
+cluster_data$type <- as.numeric(as.factor(cluster_data$type))
+cluster_data$country <- as.numeric(as.factor(cluster_data$country))
+wcss <- numeric(length = 9)
+
+for (k in 1:9) {
+  kmeans_model <- kmeans(cluster_data, centers = k)
+  wcss[k] <- kmeans_model$tot.withinss
+}
+
+# Plot the Elbow Method
+plot(1:9, wcss, type = "b", xlab = "Number of Clusters (k)", ylab = "WCSS")
+```
+:::
+
+### Assign cluster to each company
+
+We extract the revenue, country, and type columns from the table and remove any rows with missing values in these columns. To ensure that these features are on a similar scale for the clustering process, we convert the type and country columns into numeric values. This scaling step is crucial to prevent certain features from exerting a disproportionate influence on the clustering results.
+
+```{r}
+#| code-fold: true
+#| code-summary: Show code
+k <- 3  # Number of clusters
+scaled_data <- scale(cluster_data)
+kmeans_result <- kmeans(scaled_data, centers = k)
+company_cluster$cluster <- kmeans_result$cluster
+```
+
+### Cluster distribution
+
+::: panel-tabset
+## The plot
+
+```{r}
+#| eval: true
+#| echo: false
+p <- ggplot(company_cluster, aes(x = revenue_omu, y = country, color = factor(cluster), text = id)) +
+  geom_point() +
+  labs(x = "Revenue", y = "Country") +
+  scale_color_discrete(name = "Cluster") +
+  theme_minimal()
+p <- p + scale_x_continuous(labels = comma)
+p_plotly <- ggplotly(p, width = 800, height = 800)
+p_plotly
+```
+
+## The Code
+
+```{r}
+#| eval: false
+p <- ggplot(company_cluster, aes(x = revenue_omu, y = country, color = factor(cluster), text = id)) +
+  geom_point() +
+  labs(x = "Revenue", y = "Country") +
+  scale_color_discrete(name = "Cluster") +
+  theme_minimal()
+p <- p + scale_x_continuous(labels = comma)
+p_plotly <- ggplotly(p, width = 800, height = 800)
+p_plotly
+```
+:::
+
+### Cluster Characteristics
+
+The average revenue of companies in cluster 1 is approximately 355,766 omu. Companies in cluster 2 have the lowest average revenue, which is 329,182 omu. On the other hand, companies in cluster 3 have the highest average revenue, which is 6,737,682, around 20 times higher than the average revenue of cluster 1. Below is a more detailed breakdown of the company proportions in each cluster.
+
+::: panel-tabset
+## The plot
+
+```{r}
+#| eval: true
+#| echo: false
+cluster_avg_revenue <- company_cluster %>%
+  group_by(cluster,country) %>%
+  summarise(avg_revenue = mean(revenue_omu))
+# Plot the stacked bar plot
+p <- ggplot(cluster_avg_revenue, aes(x = cluster, y = avg_revenue, fill = country)) +
+  geom_bar(stat = "identity") +
+  labs(x = "Cluster", y = "Average Revenue") +
+  scale_fill_discrete(name = "Country") +
+  theme_minimal()+
+  theme(legend.position = "bottom")
+
+ p <- p + scale_y_continuous(labels = comma)
+ 
+ 
+ggplotly(p)
+```
+
+## The Code
+
+```{r}
+#| eval: false
+cluster_avg_revenue <- company_cluster %>%
+  group_by(cluster,country) %>%
+  summarise(avg_revenue = mean(revenue_omu))
+# Plot the stacked bar plot
+p <- ggplot(cluster_avg_revenue, aes(x = cluster, y = avg_revenue, fill = country)) +
+  geom_bar(stat = "identity") +
+  labs(x = "Cluster", y = "Average Revenue") +
+  scale_fill_discrete(name = "Country") +
+  theme_minimal()+
+  theme(legend.position = "bottom")
+
+ p <- p + scale_y_continuous(labels = comma)
+ 
+ 
+ggplotly(p)
+```
+:::
+
+# References
+
+LADAL. (n.d.). Topic Modeling. Language and Document Analysis Lab. Retrieved from <https://ladal.edu.au/topicmodels.html>
