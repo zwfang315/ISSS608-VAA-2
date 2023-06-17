@@ -11,7 +11,7 @@ execute:
 editor: visual
 ---
 
-The objective of this challenge is to utilize the visual analytics process to identify and categorize the products and services offered by companies based on their similarity. To achieve this, we will utilize **Topic modeling** **(LDA)**, to extract the main objectives from each group. Through this method, we can assign topics to business group based on their product_service description. Subsequently, we will proceed to cluster the companies together based on their similarities.
+The objective of this challenge is to utilize the visual analytics process to identify and categorize the products and services offered by companies based on their similarity. To achieve this, we will utilize **Topic modeling** **(LDA)**, to extract the main objectives from each group. Through this method, we can assign topics to business group based on their product_service description. Subsequently, we will have a closer look on their revenue distribution across different business groups.
 
 # Data Import
 
