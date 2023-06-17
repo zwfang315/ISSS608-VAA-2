@@ -440,7 +440,7 @@ company_topics <- company_topics %>%
   select(id, topic, beta) 
 company_topics <- unique(company_topics)
 token_nodes_table$topic <- company_topics$topic
-token_nodes_table$TopicLabel <- ifelse(token_nodes_table$topic == 1, "Manufacturing and Construction Equipment", ifelse(token_nodes_table$topic == 2, "Seafood Industry", ifelse(token_nodes_table$topic == 3, "Freight and Logistics Industry", ifelse(token_nodes_table$topic == 4, "Fashion and Apparel Industry", ifelse(token_nodes_table$topic == 5, "Food packaging and Grocery Industry", "Textile and Paper Industry")))))
+token_nodes_table$TopicLabel <- ifelse(token_nodes_table$topic == 1, "Manufacturing and Construction Equipment", ifelse(token_nodes_table$topic == 2, "Seafood processing and distribution, fishery, seafood restaurants", ifelse(token_nodes_table$topic == 3, "Freight transportation, logistics, warehousing, shipping", ifelse(token_nodes_table$topic == 4, "Fashion and Apparel Industry", ifelse(token_nodes_table$topic == 5, "Food packaging and Grocery Industry", "Textile and Paper Industry")))))
 
 topic_map <- token_nodes_table %>%
   select(id, TopicLabel)
