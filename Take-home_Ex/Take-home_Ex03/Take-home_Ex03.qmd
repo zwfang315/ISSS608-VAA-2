@@ -243,17 +243,35 @@ topicModel <- LDA(nodes_dtm, K, method="Gibbs", control=list(iter = 500, verbose
 
 Below are the word clouds for each topic, representing the most frequent and significant words within each topic.
 
-Topic 1: Manufacturing and construction Industry. Companies may specialize in working with steel and casting, utilizing machinery and power for their operations.
+Topic 1 
+Keywords: machine, steel, cast, construction, power, metal, equipment
+Industry: Manufacturing of construction equipment, heavy machinery, metal fabrication
+Description: Companies may specialize in working with steel and casting, utilizing machinery and power for their operations.
 
-Topic 2: Seafood Industry. Company is likely involved in the seafood industry, specifically dealing with shrimp, salmon, fillet, shellfish, marine products, crab, cod, seafood, fish, and tuna. They may be engaged in activities such as fishing, processing, and selling various types of seafood products.
 
-Topic 3: Logistics and transportation service Industry. Companies may specializes in cargo handling and storage solutions, offering efficient air, sea, and truck transportation services. They provide reliable shipping and delivery options, including container logistics and warehouse management. Their expertise lies in facilitating the smooth movement of goods, ensuring timely and secure transportation throughout the supply chain.
+Topic 2
+Keywords: seafood, cod, tuna, fish, shellfish, marine, crab, fillet, salmon, shrimp
+Industry: Seafood processing and distribution, fishery, seafood restaurants
+Description: Company most likely involved in the seafood industry, specifically dealing with shrimp, salmon, fillet, shellfish, marine products, crab, cod, seafood, fish, and tuna. They may be engaged in activities such as fishing, processing, and selling various types of seafood products.
 
-Topic 4: Manufacturing and retail industry. Companies may operate in the retail or consumer goods industry. "rubber" could indicate that the company uses or specializes in rubber-based materials or products. It appears that the company's business revolves around the production or sale of consumer goods, particularly in the fashion and home furnishing sectors.
+Topic 3
+Keywords: freight, cargo, truck, storage, air, sea, transport, warehouse, container
+Industry: Freight transportation, logistics, warehousing, shipping
+Description: Companies may specializes in cargo handling and storage solutions, offering efficient air, sea, and truck transportation services. They provide reliable shipping and delivery options, including container logistics and warehouse management. Their expertise lies in facilitating the smooth movement of goods, ensuring timely and secure transportation throughout the supply chain.
 
-Topic 5: Food Industry. Companies involved in the production, packaging, and distribution of various food products.
+Topic 4
+Keywords: shoe, apparel, bag, design, rubber, furniture, market, household, footwear, manufacture
+Industry: Fashion and apparel manufacturing, shoe production, design, retail
+Description: Companies may operate in the retail or consumer goods industry. "rubber" could indicate that the company uses or specializes in rubber-based materials or products. It appears that the company's business revolves around the production or sale of consumer goods, particularly in the fashion and home furnishing sectors.
 
-Topic 6: Manufacturing and supply of products/resources.
+Topic 5
+Keywords: package, poultry, meat, grocery, film, fruit, food, sauce, vegetable
+Industry: Food packaging, poultry and meat processing, grocery retail
+Description: Companies involved in the production, packaging, and distribution of various food products.
+
+Topic 6
+Keywords: textile, paper, water, finish, paint, glue, fiber, light, base, fabric
+Industry: Textile manufacturing, paper production, adhesive and glue manufacturing
 
 ::: panel-tabset
 ## Topic 1
@@ -422,7 +440,7 @@ company_topics <- company_topics %>%
   select(id, topic, beta) 
 company_topics <- unique(company_topics)
 token_nodes_table$topic <- company_topics$topic
-token_nodes_table$TopicLabel <- ifelse(token_nodes_table$topic == 1, "Manufacturing and Construction Industry", ifelse(token_nodes_table$topic == 2, "Seafood Industry", ifelse(token_nodes_table$topic == 3, "Logistics and transportation service Industry", ifelse(token_nodes_table$topic == 4, "Manufacturing and retail industry", ifelse(token_nodes_table$topic == 5, "Food Industry", "Manufacturing and supply of products/resources")))))
+token_nodes_table$TopicLabel <- ifelse(token_nodes_table$topic == 1, "Manufacturing and Construction Equipment", ifelse(token_nodes_table$topic == 2, "Seafood Industry", ifelse(token_nodes_table$topic == 3, "Freight and Logistics Industry", ifelse(token_nodes_table$topic == 4, "Fashion and Apparel Industry", ifelse(token_nodes_table$topic == 5, "Food packaging and Grocery Industry", "Textile and Paper Industry")))))
 
 topic_map <- token_nodes_table %>%
   select(id, TopicLabel)
@@ -466,13 +484,71 @@ ggplotly(bar_plot)
 ```
 :::
 
-## Clutser Analysis
+## Unveiling Industry Insights
+### Exploring Revenue Distribution Across Diverse Sectors
+Observation:
 
-In addition to examining a company's product services, we can also perform clustering based on factors such as **revenue**, **country**, and **type**. By doing so, we can identify distinct clusters of companies and explore the unique characteristics associated with each cluster. This approach allows us to gain insights into how companies within each cluster differ in terms of their revenue, geographical location, and business type.
+In our analysis of different industries, we examined the median revenue for each industry. 
+The manufacturing and construction equipment industry stood out with the highest median revenue, reaching approximately 34,000 omu. This industry's strong performance can be attributed to its focus on producing machinery, steel casting, and utilizing power for construction purposes.
 
-### Find the optimal k cluster
+Following closely behind is the freight and logistics industry, which boasts a median revenue of 33,000 omu. This industry is involved in the transportation and storage of goods, both by air and sea. Its pivotal role in facilitating trade and commerce contributes to its solid revenue figures.
 
-The elbow method is utilized to determine the appropriate number of topics. By examining the graph, it is evident that the optimal number of clusters is 3 based on the elbow point.
+Not far behind is the food packaging and grocery industry, with a median revenue of 32,000 omu. This sector specializes in packaging food products, ensuring their quality and preservation. It also includes the grocery segment, offering a wide range of food items to consumers.
+
+In the fourth position is the textile and paper industry, with a median revenue of 28.6 thousand omu. This industry is involved in the production of textiles, paper products, and related materials. It plays a vital role in the manufacturing and supply chain of various consumer goods.
+
+On the other end of the spectrum, we find the seafood industry with a median revenue of 27,000 omu. This industry focuses on the harvesting, processing, and distribution of seafood products, meeting the demand for fresh and high-quality seafood.
+
+Lastly, we have the fashion and apparel industry, which also showcases a median revenue of 27,000 omu. This sector encompasses the design, manufacturing, and retail of clothing and accessories, catering to fashion-conscious consumers.
+
+These findings shed light on the revenue distribution across different industries. It's clear that the manufacturing and construction equipment industry leads the way, followed closely by freight and logistics, and food packaging and grocery. 
+
+```{r}
+revenue_business_group <- inner_join(topic_map, mc3_nodes, by = "id")
+revenue_business_group <- revenue_business_group %>% 
+  select(id, country, type, revenue_omu, TopicLabel) %>%
+  na.omit()
+
+##remove outliers for each topic label
+fences <- revenue_business_group %>%
+  group_by(TopicLabel) %>%
+  summarise(lower_fence = quantile(revenue_omu, 0.25) - 1.5 * IQR(revenue_omu),
+            upper_fence = quantile(revenue_omu, 0.75) + 1.5 * IQR(revenue_omu))
+
+# Remove outliers for each TopicLabel
+filtered_revenue_business_group <- revenue_business_group %>%
+  left_join(fences, by = "TopicLabel") %>%
+  filter(revenue_omu >= lower_fence, revenue_omu <= upper_fence) %>%
+  select(id, country, type, revenue_omu, TopicLabel)
+
+p <- ggplot(filtered_revenue_business_group, aes(x = reorder(TopicLabel, desc(revenue_omu)), y = revenue_omu, fill = TopicLabel)) +
+  geom_boxplot() +
+  labs(x = "Topic Label", y = "Revenue") +
+  theme_minimal() +
+  coord_cartesian(ylim = c(0, 300000)) 
+p <- p + theme(axis.text.x = element_text(angle = 45, hjust = 0.5, vjust = 0.5))
+
+ggplotly(p)
+```
+
+## Unveiling Industry Titans
+### Exploring Dominant Players Across Countries
+
+Observation:
+
+In the fashion and apparel industry, Osterivaria emerges as a dominant force, contributing to 52.4% of the total revenue. This country's fashion industry thrives, showcasing its strong market presence and capturing a significant share of the industry's revenue.
+
+Moving on to the food packaging and grocery industry, Utoporiana takes the lead, accounting for a substantial 66% of the revenue. This country's efficient packaging and grocery sector plays a pivotal role in meeting consumer demands and driving revenue growth.
+
+When it comes to the freight and logistics industry, Isliandor emerges as a major player, contributing to 43.2% of the total revenue. The country's well-established logistics infrastructure and strategic location position it as a hub for transportation and storage, attracting significant business activity.
+
+In the manufacturing and construction equipment industry, Alverovia stands out with a significant market share, accounting for 29.8% of the revenue. The country's expertise in manufacturing and construction-related machinery and equipment contributes to its strong performance in this industry.
+
+The seafood industry showcases a clear leader, with ZH dominating the market and accounting for a remarkable 72.25% of the revenue. This country's abundant marine resources and expertise in seafood processing and distribution solidify its position as a key player in the global seafood market.
+
+Finally, in the textile and paper industry, ZH once again takes the spotlight, accounting for 35.9% of the total revenue. The country's advanced textile manufacturing capabilities and robust paper production sector contribute to its significant revenue share.
+
+These findings highlight the prominent role played by specific countries in each industry, showcasing their expertise, market dominance, and revenue contribution. Understanding the big players in various industries provides valuable insights into global market dynamics and helps identify potential areas for collaboration and investment.
 
 ::: panel-tabset
 ## The plot
@@ -480,107 +556,16 @@ The elbow method is utilized to determine the appropriate number of topics. By e
 ```{r}
 #| eval: true
 #| echo: false
-company_cluster <- mc3_nodes[complete.cases(mc3_nodes$revenue_omu, mc3_nodes$country, mc3_nodes$type), ]
-cluster_data <- company_cluster[, c("revenue_omu", "type", "country")]
-cluster_data$type <- as.numeric(as.factor(cluster_data$type))
-cluster_data$country <- as.numeric(as.factor(cluster_data$country))
-wcss <- numeric(length = 9)
-
-for (k in 1:9) {
-  kmeans_model <- kmeans(cluster_data, centers = k)
-  wcss[k] <- kmeans_model$tot.withinss
-}
-
-# Plot the Elbow Method
-plot(1:9, wcss, type = "b", xlab = "Number of Clusters (k)", ylab = "WCSS")
-```
-
-## The Code
-
-```{r}
-#| eval: false
-company_cluster <- mc3_nodes[complete.cases(mc3_nodes$revenue_omu, mc3_nodes$country, mc3_nodes$type), ]
-cluster_data <- company_cluster[, c("revenue_omu", "type", "country")]
-cluster_data$type <- as.numeric(as.factor(cluster_data$type))
-cluster_data$country <- as.numeric(as.factor(cluster_data$country))
-wcss <- numeric(length = 9)
-
-for (k in 1:9) {
-  kmeans_model <- kmeans(cluster_data, centers = k)
-  wcss[k] <- kmeans_model$tot.withinss
-}
-
-# Plot the Elbow Method
-plot(1:9, wcss, type = "b", xlab = "Number of Clusters (k)", ylab = "WCSS")
-```
-:::
-
-### Assign cluster to each company
-
-We extract the revenue, country, and type columns from the table and remove any rows with missing values in these columns. To ensure that these features are on a similar scale for the clustering process, we convert the type and country columns into numeric values. This scaling step is crucial to prevent certain features from exerting a disproportionate influence on the clustering results.
-
-```{r}
-#| code-fold: true
-#| code-summary: Show code
-k <- 3  # Number of clusters
-scaled_data <- scale(cluster_data)
-kmeans_result <- kmeans(scaled_data, centers = k)
-company_cluster$cluster <- kmeans_result$cluster
-```
-
-### Cluster distribution
-
-::: panel-tabset
-## The plot
-
-```{r}
-#| eval: true
-#| echo: false
-p <- ggplot(company_cluster, aes(x = revenue_omu, y = country, color = factor(cluster), text = id)) +
-  geom_point() +
-  labs(x = "Revenue", y = "Country") +
-  scale_color_discrete(name = "Cluster") +
-  theme_minimal()
-p <- p + scale_x_continuous(labels = comma)
-p_plotly <- ggplotly(p, width = 800, height = 800)
-p_plotly
-```
-
-## The Code
-
-```{r}
-#| eval: false
-p <- ggplot(company_cluster, aes(x = revenue_omu, y = country, color = factor(cluster), text = id)) +
-  geom_point() +
-  labs(x = "Revenue", y = "Country") +
-  scale_color_discrete(name = "Cluster") +
-  theme_minimal()
-p <- p + scale_x_continuous(labels = comma)
-p_plotly <- ggplotly(p, width = 800, height = 800)
-p_plotly
-```
-:::
-
-### Cluster Characteristics
-
-The average revenue of companies in cluster 1 is approximately 355,766 omu. Companies in cluster 2 have the lowest average revenue, which is 329,182 omu. On the other hand, companies in cluster 3 have the highest average revenue, which is 6,737,682, around 20 times higher than the average revenue of cluster 1. Below is a more detailed breakdown of the company proportions in each cluster.
-
-::: panel-tabset
-## The plot
-
-```{r}
-#| eval: true
-#| echo: false
-cluster_avg_revenue <- company_cluster %>%
-  group_by(cluster,country) %>%
+cluster_avg_revenue <- revenue_business_group %>%
+  group_by(TopicLabel,country) %>%
   summarise(avg_revenue = mean(revenue_omu))
 # Plot the stacked bar plot
-p <- ggplot(cluster_avg_revenue, aes(x = cluster, y = avg_revenue, fill = country)) +
+p <- ggplot(cluster_avg_revenue, aes(x = TopicLabel, y = avg_revenue, fill = country)) +
   geom_bar(stat = "identity") +
   labs(x = "Cluster", y = "Average Revenue") +
   scale_fill_discrete(name = "Country") +
   theme_minimal()+
-  theme(legend.position = "bottom")
+  theme(legend.position = "bottom", axis.text.x = element_text(angle = 45, hjust = 0.5, vjust = 0.5))
 
  p <- p + scale_y_continuous(labels = comma)
  
@@ -592,16 +577,16 @@ ggplotly(p)
 
 ```{r}
 #| eval: false
-cluster_avg_revenue <- company_cluster %>%
-  group_by(cluster,country) %>%
+cluster_avg_revenue <- revenue_business_group %>%
+  group_by(TopicLabel,country) %>%
   summarise(avg_revenue = mean(revenue_omu))
 # Plot the stacked bar plot
-p <- ggplot(cluster_avg_revenue, aes(x = cluster, y = avg_revenue, fill = country)) +
+p <- ggplot(cluster_avg_revenue, aes(x = TopicLabel, y = avg_revenue, fill = country)) +
   geom_bar(stat = "identity") +
   labs(x = "Cluster", y = "Average Revenue") +
   scale_fill_discrete(name = "Country") +
   theme_minimal()+
-  theme(legend.position = "bottom")
+  theme(legend.position = "bottom", axis.text.x = element_text(angle = 45, hjust = 0.5, vjust = 0.5))
 
  p <- p + scale_y_continuous(labels = comma)
  
